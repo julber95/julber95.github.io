@@ -1,0 +1,20 @@
+@media print {
+  :root, :root[data-theme='dark'] {
+    --bg: #fff; --surface: #fff; --ink: #111; --ink-soft: #444; --rule: #bbb; --accent: #9a3424;
+  }
+  @page { margin: 16mm 16mm 18mm; }
+  html, body { background: #fff !important; font-size: 10.5pt; }
+  body::before, .masthead, .toc-overlay, .errata, .skip, .no-print, .colophon__errata, .colophon__zero, .field, .plate-nav { display: none !important; }
+  .page { display: block; max-width: none; padding: 0; }
+  .page-top { padding-top: 0 !important; }
+  .section { padding-block: 0 1.2rem !important; }
+  a { text-decoration: none; }
+  .js [data-reveal], .js [data-draw] { opacity: 1 !important; transform: none !important; transition: none !important; animation: none !important; }
+  .colophon__links, .colophon__col:nth-child(2) { display: none !important; }
+  .colophon { padding-top: 1.2rem; break-inside: avoid; }
+  .colophon__grid { display: flex; gap: 2rem; }
+  h1 { font-size: 26pt; }
+  h2 { font-size: 15pt; }
+  .print-only { display: block !important; }
+}
+.print-only { display: none; }

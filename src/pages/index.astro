@@ -1,0 +1,58 @@
+---
+import Base from '../layouts/Base.astro';
+import SpecimenField from '../components/SpecimenField.astro';
+import FeaturedPlate from '../components/FeaturedPlate.astro';
+import { getPlates } from '../lib/plates';
+import { site } from '../data/site';
+
+const plates = await getPlates();
+const featuredOrder = ['VII', 'VI', 'III'];
+const featured = featuredOrder.map((n) => plates.find((p) => p.data.numeral === n)!).filter(Boolean);
+---
+<Base person>
+  <SpecimenField />
+
+  <section class="intro page section" aria-labelledby="intro-title">
+    <p class="label intro__label" data-reveal>Preface</p>
+    <h2 id="intro-title" class="sr-only">Preface</h2>
+    <div class="intro__text">
+      <p class="lead" data-reveal style="--i:1">
+        I study artificial intelligence at Université PSL and work as an AI engineer in a research division.
+        This atlas collects the models I have built, broken and measured, one plate per specimen, each with
+        its method, its real results, and a drawing.
+      </p>
+      <p class="intro__aside" data-reveal style="--i:2">
+        Generative models, language, medical imaging and plain tabular learning, catalogued in the order I met them.
+        Read it as a lab notebook that got a little out of hand.
+      </p>
+    </div>
+    <aside class="intro__margin mono soft" data-reveal style="--i:3">
+      <span class="label">Currently</span>
+      <span>{site.status.map((s) => `${s.label} @ ${s.at}`).join(' · ')}</span>
+      <span class="intro__coords">{site.coords}</span>
+    </aside>
+  </section>
+
+  <section class="selected page section" aria-labelledby="selected-title">
+    <header class="section-head">
+      <span class="label" data-reveal>Plates</span>
+      <h2 id="selected-title" data-reveal style="--i:1">Selected <em>plates</em></h2>
+      <a class="aside arrow-link" href="/work/" data-reveal style="--i:2"><span>Full catalogue, I–VII</span><span>→</span></a>
+    </header>
+    {featured.map((p, i) => <FeaturedPlate plate={p} index={i} />)}
+  </section>
+</Base>
+
+<style>
+  .intro { padding-top: var(--s-9); row-gap: var(--s-5); }
+  .intro__label { grid-column: 1 / span 1; padding-top: .55rem; }
+  .intro__text { grid-column: 2 / span 7; display: grid; gap: var(--s-5); }
+  .intro__text .lead { font-size: clamp(1.45rem, 1.1rem + 1.3vw, 2.25rem); line-height: 1.24; letter-spacing: -0.012em; font-weight: 340; }
+  .intro__aside { color: var(--ink-soft); max-width: 52ch; }
+  .intro__margin { grid-column: 10 / -1; display: grid; gap: .45rem; align-content: start; padding-top: .55rem; border-top: var(--hair) solid var(--rule); font-size: .75rem; line-height: 1.5; }
+  .intro__coords { color: var(--ink-soft); }
+  @media (max-width: 860px) {
+    .intro__label, .intro__text, .intro__margin { grid-column: 1 / -1; }
+    .intro__margin { margin-top: var(--s-5); }
+  }
+</style>

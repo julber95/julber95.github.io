@@ -1,0 +1,30 @@
+---
+import { getEntry, render } from 'astro:content';
+import Base from '../layouts/Base.astro';
+import { fmtDate, isoDate } from '../lib/format';
+const now = (await getEntry('now', 'now'))!;
+const { Content } = await render(now);
+---
+<Base title="Now" description="What Julien Bernardi is focused on at the moment.">
+  <div class="page page-top nowp">
+    <header class="nowp__head">
+      <p class="label" data-reveal>§5 · Now</p>
+      <h1 data-reveal style="--i:1">At the bench, <em>this season</em></h1>
+      <p class="mono soft" data-reveal style="--i:2">
+        Entry of <time datetime={isoDate(now.data.updated)}>{fmtDate(now.data.updated)}</time>{now.data.place && <> · {now.data.place}</>}
+      </p>
+    </header>
+    <div class="nowp__body prose" data-reveal style="--i:3"><Content /></div>
+  </div>
+</Base>
+<style>
+  .nowp__head { grid-column: 2 / span 9; display: grid; gap: var(--s-5); margin-bottom: var(--s-8); }
+  .nowp__head h1 { font-size: clamp(2.6rem, 1.6rem + 4vw, 6rem); }
+  .nowp__head .mono { font-size: .78rem; }
+  .nowp__body { grid-column: 2 / span 7; font-size: 1.1em; }
+  .nowp__body :global(ul) { list-style: none; padding: 0; }
+  .nowp__body :global(li) { padding-block: .8rem; border-bottom: var(--hair) solid var(--rule); }
+  .nowp__body :global(li::marker) { content: none; }
+  .nowp__body :global(li strong) { font-family: var(--f-mono); font-weight: 400; font-size: .72rem; letter-spacing: .12em; text-transform: uppercase; color: var(--accent); display: inline-block; min-width: 7rem; }
+  @media (max-width: 860px) { .nowp__head, .nowp__body { grid-column: 1 / -1; } .nowp__body :global(li strong) { display: block; } }
+</style>

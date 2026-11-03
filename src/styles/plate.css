@@ -1,0 +1,26 @@
+/* Marginalia: <aside class="note"> inside prose floats into the margin column (cols 10–12)
+   on wide screens, and becomes an inline footnote on narrow ones. The prose block spans 7 columns. */
+.prose { counter-reset: sec note; }
+.prose aside.note {
+  counter-increment: note;
+  font-size: .8125rem; line-height: 1.5; color: var(--ink-soft);
+  position: relative;
+}
+.prose aside.note::before {
+  content: counter(note);
+  font: 500 .6875rem/1 var(--f-mono); color: var(--accent);
+  margin-right: .5em;
+}
+@media (min-width: 861px) {
+  .prose aside.note {
+    float: right; clear: right;
+    width: calc((100% - 6 * var(--gutter)) * 3 / 7 + 2 * var(--gutter));
+    margin-right: calc(-1 * ((100% - 6 * var(--gutter)) * 4 / 7 + 4 * var(--gutter)));
+    margin-top: .3em !important;
+    padding-top: .5rem; border-top: var(--hair) solid var(--rule);
+  }
+}
+@media (max-width: 860px) {
+  .prose aside.note { padding: .6rem 0 .6rem .9rem; border-left: var(--hair) solid var(--accent); }
+}
+.prose kbd { font-size: .75em; }

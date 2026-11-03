@@ -1,0 +1,135 @@
+---
+import { getCollection, render } from 'astro:content';
+import Base from '../layouts/Base.astro';
+import { getPlates, hrefOf } from '../lib/plates';
+import { site } from '../data/site';
+
+const entries = (await getCollection('log')).sort((a, b) => b.data.start.getTime() - a.data.start.getTime());
+const plates = await getPlates();
+const rendered = await Promise.all(entries.map(async (e) => ({ e, Content: (await render(e)).Content, hasBody: !!e.body?.trim() })));
+const now = new Date();
+---
+<Base title="Field Log" description="Field log: education and experience as one expedition journal, from Paris-Dauphine to PSL, INSEE and AMIAD.">
+  <div class="page page-top log">
+    <header class="log__head">
+      <p class="label" data-reveal>§3 · Field Log</p>
+      <h1 data-reveal style="--i:1">Where the specimens <em>were collected</em></h1>
+      <p class="log__intro soft" data-reveal style="--i:2">
+        Studies and field work as a single journal, most recent entry first. Each stop lists the plates made there.
+      </p>
+      <p class="log__print no-print mono" data-reveal style="--i:3">
+        <a href="/cv.pdf">Curriculum vitae (PDF)</a> · or print this page
+      </p>
+    </header>
+
+    <p class="print-only log__printhead">
+      {site.name} · {site.email} · {site.github.replace('https://', '')} · {site.linkedin.replace('https://www.', '')}
+    </p>
+
+    <ol class="journal" role="list">
+      {rendered.map(({ e, Content, hasBody }, i) => {
+        const d = e.data;
+        const y = d.start.getFullYear();
+        const showYear = i === 0 || rendered[i - 1]!.e.data.start.getFullYear() !== y;
+        const current = d.start <= now && d.end >= now;
+        const linked = d.plates.map((r) => plates.find((p) => p.id === r.id)).filter(Boolean);
+        return (
+          <li class:list={['entry', { 'entry--current': current }]} data-reveal>
+            <div class="entry__year">{showYear && <span class="entry__y">{y}</span>}</div>
+            <div class="entry__mark" aria-hidden="true"><span></span></div>
+            <div class="entry__body">
+              <p class="entry__kind label">
+                {d.kind === 'education' ? 'Study' : 'Field work'}
+                {current && <span class="entry__now"> · in progress</span>}
+              </p>
+              <h2 class="entry__title">{d.title}</h2>
+              <p class="entry__org">{d.org}</p>
+              {hasBody && <div class="entry__text"><Content /></div>}
+              {d.courses.length > 0 && (
+                <p class="entry__courses"><span class="label">Coursework</span> {d.courses.join(' · ')}</p>
+              )}
+              {linked.length > 0 && (
+                <p class="entry__plates mono">
+                  <span class="label">Plates</span>
+                  {linked.map((p) => <a href={hrefOf(p!)}>{p!.data.numeral} <span class="soft">{p!.data.short}</span></a>)}
+                </p>
+              )}
+            </div>
+            <div class="entry__where mono">
+              <span>{d.when}</span>
+              <span class="soft">{d.place}</span>
+              <span class="soft">{d.coords}</span>
+            </div>
+          </li>
+        );
+      })}
+    </ol>
+
+    <section class="log__lang" aria-labelledby="lang-h">
+      <h2 id="lang-h" class="label">Languages</h2>
+      <p>French <span class="soft mono">native</span> · English <span class="soft mono">C1</span></p>
+    </section>
+  </div>
+</Base>
+
+<style>
+  .log__head { grid-column: 2 / span 9; display: grid; gap: var(--s-5); margin-bottom: var(--s-8); }
+  .log__head h1 { font-size: clamp(2.6rem, 1.6rem + 4vw, 6rem); }
+  .log__intro { max-width: 54ch; font-size: var(--t-lead); font-family: var(--f-display); line-height: 1.35; font-weight: 340; }
+  .log__print { font-size: .75rem; color: var(--ink-soft); }
+  .log__print a { text-decoration-color: var(--accent); color: var(--ink); }
+
+  .journal { grid-column: 1 / -1; display: grid; grid-template-columns: subgrid; position: relative; }
+  .entry { grid-column: 1 / -1; display: grid; grid-template-columns: subgrid; position: relative; padding-bottom: var(--s-8); }
+  .entry__year { grid-column: 1 / span 1; }
+  .entry__y { white-space: nowrap; font-family: var(--f-display); font-size: clamp(1.7rem, 1rem + 1.4vw, 2.5rem); font-weight: 300; line-height: .9; font-variation-settings: 'opsz' 144; position: sticky; top: 6rem; display: block; }
+  .entry__mark { grid-column: 2 / span 1; position: relative; justify-self: start; width: 100%; }
+  .entry__mark::before { content: ''; position: absolute; left: 6px; top: 0; bottom: calc(-1 * var(--s-8)); width: var(--hair); background: var(--rule); }
+  .entry:last-child .entry__mark::before { bottom: 0; }
+  .entry__mark span { position: absolute; left: 0; top: .55rem; width: 13px; height: 13px; border-radius: 50%; border: var(--hair) solid var(--ink); background: var(--bg); }
+  .entry--current .entry__mark span { background: var(--accent); border-color: var(--accent); }
+  .entry__body { grid-column: 3 / span 6; display: grid; gap: .5rem; align-content: start; }
+  .entry__now { color: var(--accent); }
+  .entry__title { font-size: var(--t-h3); line-height: 1.15; font-weight: 420; }
+  .entry__org { font-family: var(--f-display); font-style: italic; color: var(--ink-soft); font-size: 1.08rem; }
+  .entry__text { max-width: 58ch; margin-top: .3rem; }
+  .entry__text :global(code) { font-family: var(--f-mono); font-size: .84em; }
+  .entry__courses { font-size: var(--t-small); color: var(--ink-soft); max-width: 62ch; margin-top: .3rem; }
+  .entry__courses .label, .entry__plates .label { margin-right: .6rem; }
+  .entry__plates { display: flex; flex-wrap: wrap; gap: .3rem 1rem; font-size: .75rem; margin-top: .3rem; align-items: baseline; }
+  .entry__plates a { text-decoration: none; color: var(--accent); }
+  .entry__plates a:hover .soft { color: var(--ink); }
+  .entry__where { grid-column: 10 / -1; display: grid; gap: .2rem; font-size: .75rem; align-content: start; padding-top: .5rem; }
+
+  .log__lang { grid-column: 3 / span 6; padding-top: var(--s-5); border-top: var(--hair) solid var(--ink); display: grid; gap: .5rem; }
+  .log__lang p { font-family: var(--f-display); font-size: 1.25rem; }
+
+  @media (max-width: 860px) {
+    .log__head { grid-column: 1 / -1; }
+    .journal, .entry { display: grid; grid-template-columns: 22px 1fr; column-gap: 14px; }
+    .entry { padding-bottom: var(--s-7); }
+    .entry__year { grid-column: 1 / -1; }
+    .entry__y { position: static; font-size: 2rem; margin-bottom: .6rem; }
+    .entry__mark { grid-column: 1; grid-row: 2 / span 2; }
+    .entry__mark::before { bottom: calc(-1 * var(--s-7)); }
+    .entry__body { grid-column: 2; grid-row: 2; }
+    .entry__where { grid-column: 2; grid-row: 3; display: flex; flex-wrap: wrap; gap: .2rem .8rem; padding-top: .8rem; }
+    .log__lang { grid-column: 1 / -1; }
+  }
+
+  @media print {
+    .log__head h1 { font-size: 20pt; }
+    .log__intro, .log__print { display: none; }
+    .log__printhead { font: 9pt var(--f-mono); margin: .3rem 0 1rem; }
+    .journal { display: block; }
+    .entry { display: grid !important; grid-template-columns: 3.2rem 1fr 11.5rem !important; column-gap: 1rem; padding-bottom: .9rem; break-inside: avoid; }
+    .entry__mark { display: none !important; }
+    .entry__year { grid-column: 1 !important; grid-row: 1 !important; }
+    .entry__y { position: static; font-size: 14pt; margin: 0; }
+    .entry__body { grid-column: 2 !important; grid-row: 1 !important; }
+    .entry__where { grid-column: 3 !important; grid-row: 1 !important; display: grid !important; padding-top: .2rem; font-size: 8pt; }
+    .entry__where span:first-child { white-space: nowrap; }
+    .entry__title { font-size: 12pt; }
+    .log__lang { margin-top: .6rem; }
+  }
+</style>

@@ -1,0 +1,148 @@
+---
+/* Plate IV: autoregressive decoding. A beam-search token tree drawn as an engraved branch,
+   growing left to right from the prompt; the surviving beam is traced in vermilion. */
+import Frame from './Frame.astro';
+import { rng, line, smooth, wobble, hatch, closed, blob, sampleCurve, taper, int, type P } from '../../lib/engrave';
+
+interface Props { uid: string; title: string; desc: string }
+const { uid, title, desc } = Astro.props;
+const R = rng(4004);
+
+// ── the tree ─────────────────────────────────────────────
+const LX = [100, 166, 232, 298, 364, 430];          // root, then t+1 … t+5
+const Y = (y: number) => 232 + (y - 214) * 1.32;  // vertical spread around the centre line
+type Kind = 'beam' | 'kept' | 'cut';
+interface N { w: string; lp: string; d: number; y: number; k: Kind; up?: number; p: P }
+const spec: Omit<N, 'p'>[] = [
+  { w: '', lp: '', d: 0, y: 238, k: 'beam' },
+  { w: 'of', lp: '−0.4', d: 1, y: 220, k: 'beam', up: 0 },
+  { w: 'in', lp: '−1.9', d: 1, y: 314, k: 'kept', up: 0 },
+  { w: 'and', lp: '−2.7', d: 1, y: 148, k: 'cut', up: 0 },
+  { w: 'the', lp: '−0.3', d: 2, y: 202, k: 'beam', up: 1 },
+  { w: 'a', lp: '−1.8', d: 2, y: 258, k: 'cut', up: 1 },
+  { w: 'the', lp: '−0.9', d: 2, y: 340, k: 'cut', up: 2 },
+  { w: 'most', lp: '−0.7', d: 3, y: 186, k: 'beam', up: 4 },
+  { w: 'best', lp: '−1.9', d: 3, y: 246, k: 'kept', up: 4 },
+  { w: 'biggest', lp: '−2.2', d: 3, y: 124, k: 'cut', up: 4 },
+  { w: 'common', lp: '−1.2', d: 4, y: 176, k: 'beam', up: 7 },
+  { w: 'important', lp: '−1.0', d: 4, y: 112, k: 'kept', up: 7 },
+  { w: 'known', lp: '−0.6', d: 4, y: 274, k: 'cut', up: 8 },
+  { w: 'events', lp: '−1.3', d: 5, y: 170, k: 'beam', up: 10 },
+  { w: 'causes', lp: '−2.0', d: 5, y: 222, k: 'cut', up: 10 },
+  { w: 'issues', lp: '−1.5', d: 5, y: 86, k: 'cut', up: 11 },
+];
+const nodes: N[] = spec.map((s) => ({ ...s, p: [LX[s.d]! + R.gauss() * 1.5, Y(s.y)] as P }));
+nodes[0]!.p = [LX[0]!, Y(238)];
+
+/** A twig from a to b: forks off early, then runs level into the next node (like a sprig). */
+function twig(a: P, b: P, wander = 1.6): P[] {
+  const dx = b[0] - a[0], dy = b[1] - a[1];
+  return sampleCurve([
+    a,
+    [a[0] + dx * 0.14, a[1] + dy * 0.1],
+    [a[0] + dx * 0.36, a[1] + dy * 0.66 + R.gauss() * wander],
+    [a[0] + dx * 0.66, b[1] - dy * 0.04 + R.gauss() * wander * 0.3],
+    b,
+  ], 5);
+}
+
+let inkTaper = '', cutLines = '', beamTaper = '', sheen = '', crosses = '', stubs = '';
+for (const n of nodes) {
+  if (n.up === undefined) continue;
+  const par = nodes[n.up]!;
+  const pts = twig(par.p, n.p);
+  const w0 = Math.max(0.9, 3.4 - (n.d - 1) * 0.5);
+  if (n.k === 'beam') {
+    beamTaper += taper(pts, Math.max(1.5, w0), Math.max(1.3, w0 - 0.45));
+  } else if (n.k === 'kept') {
+    inkTaper += taper(pts, Math.min(w0 * 0.6, 1.6), 0.75);
+    sheen += smooth(pts.filter((_, i) => i % 2 === 0).map(([x, y]) => [x, y + 1.6] as P), 0.4);
+  } else {
+    cutLines += smooth(pts.filter((_, i) => i % 3 === 0 || i === pts.length - 1).map(([x, y]) => [x, y + R.gauss() * 0.3] as P), 0.5);
+    // the cut: a short stub past the candidate, ended by a small cross
+    const s0: P = [n.p[0] + 3, n.p[1]], s1: P = [n.p[0] + 11 + R.next() * 4, n.p[1] + R.gauss() * 1.2];
+    stubs += line([s0, [s0[0] + (s1[0] - s0[0]) * 0.5, s0[1] + R.gauss() * 0.6], s1]);
+    const c = 2.2;
+    crosses += `M${s1[0] + 2.5 - c} ${s1[1] - c}l${2 * c} ${2 * c}M${s1[0] + 2.5 - c} ${s1[1] + c}l${2 * c} ${-2 * c}`;
+  }
+}
+// a hairline beneath the beam, for volume
+const beamNodes = nodes.filter((n) => n.k === 'beam');
+const tip = beamNodes[beamNodes.length - 1]!.p;
+
+// ── the prompt: a cut stem entering from the left ───────────
+const root = nodes[0]!.p;
+const stemPts = sampleCurve([[26, root[1] + 3], [50, root[1] + 1.5], [74, root[1] + 0.5], root], 5);
+const stem = taper(stemPts, 4.6, 3.6);
+const stemSheen = smooth(stemPts.map(([x, y]) => [x, y + 3.2] as P), 0.4);
+const cutEnd = blob(26, root[1] + 3, 1.9, 2.6, R, 0.08, 12);
+const cutHatch = hatch({ x: 22, y: root[1] - 1, w: 8, h: 8 }, -40, 1.1, R, 0.1);
+
+// two small leaves on the stem and one bract at the first fork, hatched on their shadow side
+const leaf = (base: P, ang: number, len: number, wid: number): P[] => {
+  const ca = Math.cos(ang), sa = Math.sin(ang);
+  const L = (u: number, v: number): P => [base[0] + ca * u - sa * v, base[1] + sa * u + ca * v];
+  return [L(0, 0), L(len * 0.3, -wid * 0.9), L(len * 0.7, -wid * 0.7), L(len, 0), L(len * 0.65, wid * 0.55), L(len * 0.28, wid * 0.6)];
+};
+const leaves = [
+  leaf([44, root[1] + 3.4], 1.95, 26, 4.6),
+  leaf([66, root[1] + 2.6], 0.95, 16, 3.2),
+].map((pts, i) => {
+  const xs = pts.map((p) => p[0]), ys = pts.map((p) => p[1]);
+  const box = { x: Math.min(...xs), y: Math.min(...ys), w: Math.max(...xs) - Math.min(...xs), h: Math.max(...ys) - Math.min(...ys) };
+  return { id: `${uid}-lf${i}`, d: closed(pts, 0.6), h: int(hatch(box, -40, 1.7, R, 0.15)), vein: line([pts[0]!, pts[3]!]) };
+});
+
+// ── time steps: dotted guides, labelled at the top ──────────
+let guides = '';
+for (let d = 1; d <= 5; d++) for (let y = 44; y <= 404; y += 4.5) guides += `M${LX[d]} ${y.toFixed(1)}h0`;
+
+// continuation after the last step: the decoded sentence trails off
+const cont = wobble([tip[0] + 5, tip[1]], [tip[0] + 26, tip[1] + 0.5], R, 0.3, 3);
+---
+<Frame uid={uid} title={title} desc={desc} numeral="IV" taxon="Lingua autoregressiva" keyText="red · the surviving beam">
+  <defs>
+    {leaves.map((l) => <clipPath id={l.id}><path d={l.d} /></clipPath>)}
+    <clipPath id={`${uid}-cut`}><path d={closed(cutEnd)} /></clipPath>
+  </defs>
+
+  <!-- time steps -->
+  <path class="k faint" style="stroke-width:0.8" d={int(guides)} stroke-linecap="round" />
+  {[1, 2, 3, 4, 5].map((d) => <text class="lbl" x={LX[d]} y="36" text-anchor="middle">t+{d}</text>)}
+
+  <!-- pruned candidates -->
+  <path class="k w05 faint" d={cutLines} />
+  <path class="k w05 faint" d={stubs} />
+  <path class="k w05 mid" d={crosses} />
+
+  <!-- kept but later abandoned -->
+  <path class="fk" d={inkTaper} />
+  <path class="k w04 faint" d={sheen} />
+
+  <!-- the prompt stem -->
+  {leaves.map((l) => (<g><path class="bg" d={l.d} /><path class="k w04" d={l.h} clip-path={`url(#${l.id})`} /><path class="k w08" d={l.d} /><path class="k w04" d={l.vein} /></g>))}
+  <path class="fk" d={stem} />
+  <path class="k w04 faint" d={stemSheen} />
+  <path class="bg" d={closed(cutEnd)} />
+  <path class="k w04" d={cutHatch} clip-path={`url(#${uid}-cut)`} />
+  <path class="k w08" d={closed(cutEnd)} />
+  <text class="lbl-i" x="24" y={root[1] - 22}>Climate change</text>
+  <text class="lbl-i" x="24" y={root[1] - 8}>remains one</text>
+
+  <!-- the surviving beam -->
+  <path class="fa" d={beamTaper} />
+  <path class="k w05 faint" d={cont} />
+  <text class="lbl-i" x={tip[0] + 31} y={tip[1] + 4} style="font-size:11px">in the United States.</text>
+
+  <!-- nodes and words -->
+  {nodes.slice(1).map((n) => (
+    <g>
+      {n.k === 'beam'
+        ? <circle class="fa" cx={n.p[0].toFixed(1)} cy={n.p[1].toFixed(1)} r="2.5" />
+        : <circle class={n.k === 'cut' ? 'bg k w05' : 'bg k w08'} cx={n.p[0].toFixed(1)} cy={n.p[1].toFixed(1)} r={n.k === 'cut' ? 1.6 : 2.1} />}
+      <text class="lbl-k" x={(n.p[0] - 4).toFixed(1)} y={(n.p[1] - 5).toFixed(1)} text-anchor="end">{n.w}</text>
+      <text class="lbl" x={(n.p[0] - 4).toFixed(1)} y={(n.p[1] + 11).toFixed(1)} text-anchor="end">{n.lp}</text>
+    </g>
+  ))}
+  <circle class="bg k w10" cx={root[0]} cy={root[1]} r="2.6" />
+</Frame>

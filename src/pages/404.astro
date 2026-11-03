@@ -1,0 +1,44 @@
+---
+import Base from '../layouts/Base.astro';
+import { getPlates, hrefOf } from '../lib/plates';
+const plates = await getPlates();
+---
+<Base title="Specimen not found" description="This page is not in the atlas." noindex>
+  <div class="page page-top nf">
+    <p class="label nf__code">Error 404 · Catalogue no. unknown</p>
+    <h1 class="nf__title">Specimen <em>not found</em>.</h1>
+    <p class="lead nf__text">
+      The drawer you opened is empty. The specimen may have been re-catalogued, lent to another collection,
+      or never existed outside a typo.
+    </p>
+    <div class="nf__drawer crop" aria-hidden="true">
+      <svg viewBox="0 0 600 160" class="engraving">
+        <rect class="k w08" x="2" y="2" width="596" height="156" />
+        <rect class="k w04" x="8" y="8" width="584" height="144" />
+        <path class="k w05 faint" d="M40 120h520M40 124h520" />
+        <ellipse class="k w05" cx="300" cy="96" rx="64" ry="16" stroke-dasharray="2 4" />
+        <path class="k w08" d="M262 70l76 0M300 50v40" stroke-dasharray="1 5" />
+        <text class="lbl" x="300" y="146" text-anchor="middle">here lay a specimen</text>
+        <text class="lbl-a" x="560" y="30" text-anchor="end">?</text>
+      </svg>
+    </div>
+    <nav class="nf__nav" aria-label="Try instead">
+      <p class="label">Perhaps you were looking for</p>
+      <ul role="list">
+        <li><a href="/">The index</a></li>
+        <li><a href="/work/">The full catalogue</a></li>
+        {plates.slice(-3).reverse().map((p) => <li><a href={hrefOf(p)}>Plate {p.data.numeral}: {p.data.short}</a></li>)}
+      </ul>
+    </nav>
+  </div>
+</Base>
+<style>
+  .nf { row-gap: var(--s-6); padding-bottom: var(--s-8); }
+  .nf__code, .nf__title, .nf__text, .nf__drawer, .nf__nav { grid-column: 2 / span 8; }
+  .nf__title { font-size: clamp(3rem, 1.8rem + 6vw, 8rem); }
+  .nf__title em { color: var(--accent); }
+  .nf__text { max-width: 40ch; }
+  .nf__nav ul { display: grid; gap: .4rem; margin-top: .8rem; font-family: var(--f-display); font-size: 1.3rem; }
+  .nf__nav a { text-decoration-color: var(--accent); }
+  @media (max-width: 860px) { .nf__code, .nf__title, .nf__text, .nf__drawer, .nf__nav { grid-column: 1 / -1; } }
+</style>

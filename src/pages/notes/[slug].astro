@@ -1,0 +1,38 @@
+---
+import { render } from 'astro:content';
+import Base from '../../layouts/Base.astro';
+import { getNotes } from '../../lib/notes';
+import { fmtDate, isoDate } from '../../lib/format';
+import { getPlates, hrefOf } from '../../lib/plates';
+
+export async function getStaticPaths() {
+  const notes = await getNotes();
+  return notes.map((note) => ({ params: { slug: note.id }, props: { note } }));
+}
+const { note } = Astro.props;
+const { Content } = await render(note);
+const plate = note.data.plate ? (await getPlates()).find((p) => p.id === note.data.plate!.id) : undefined;
+---
+<Base title={note.data.title} description={note.data.summary} type="article" noindex={note.data.draft}>
+  <article class="page page-top note">
+    <header class="note__head">
+      <p class="label" data-reveal>Note · <time datetime={isoDate(note.data.date)}>{fmtDate(note.data.date)}</time></p>
+      <h1 data-reveal style="--i:1">{note.data.title}</h1>
+      <p class="lead soft" data-reveal style="--i:2">{note.data.summary}</p>
+    </header>
+    <div class="note__body prose"><Content /></div>
+    <aside class="note__margin mono">
+      {plate && <p><span class="label">Filed under</span><br /><a href={hrefOf(plate)}>Plate {plate.data.numeral}: {plate.data.short}</a></p>}
+      {note.data.tags.length > 0 && <p><span class="label">Tags</span><br />{note.data.tags.join(' · ')}</p>}
+      <p><a href="/notes/">← All notes</a></p>
+    </aside>
+  </article>
+</Base>
+<style>
+  .note__head { grid-column: 2 / span 8; display: grid; gap: var(--s-5); margin-bottom: var(--s-8); }
+  .note__head h1 { font-size: clamp(2.4rem, 1.6rem + 3.4vw, 5rem); }
+  .note__body { grid-column: 2 / span 7; }
+  .note__margin { grid-column: 10 / -1; font-size: .75rem; display: grid; gap: 1.2rem; align-content: start; padding-top: .8rem; border-top: var(--hair) solid var(--ink); }
+  .note__margin a { text-decoration-color: var(--accent); }
+  @media (max-width: 860px) { .note__head, .note__body, .note__margin { grid-column: 1 / -1; } .note__margin { margin-top: var(--s-7); } }
+</style>

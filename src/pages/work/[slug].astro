@@ -1,0 +1,23 @@
+---
+import Base from '../../layouts/Base.astro';
+import PlateArticle from '../../components/PlateArticle.astro';
+import { getPlates, slugOf, type Plate } from '../../lib/plates';
+
+export async function getStaticPaths() {
+  const plates = await getPlates();
+  return plates.map((plate, i) => ({
+    params: { slug: slugOf(plate) },
+    props: { plate, prev: plates[i - 1], next: plates[i + 1] },
+  }));
+}
+interface Props { plate: Plate; prev?: Plate; next?: Plate }
+const { plate, prev, next } = Astro.props;
+---
+<Base
+  title={`Plate ${plate.data.numeral}: ${plate.data.short}`}
+  description={plate.data.abstract}
+  ogImage={`/og/${slugOf(plate)}.png`}
+  type="article"
+>
+  <PlateArticle plate={plate} prev={prev} next={next} />
+</Base>

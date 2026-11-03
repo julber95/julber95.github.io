@@ -1,0 +1,173 @@
+---
+/* Plate VII — the NAF nomenclature as a root system.
+   Reference engraving for docs/ENGRAVING-STYLE.md. */
+import Frame from './Frame.astro';
+import { rng, line, smooth, wobble, hatch, dots, stipple, blob, closed, sampleCurve, taper, int, type P } from '../../lib/engrave';
+
+interface Props { uid: string; title: string; desc: string }
+const { uid, title, desc } = Astro.props;
+const R = rng(7007);
+
+// ── geometry ─────────────────────────────────────
+const GROUND = 96;
+const COLLAR: P = [300, GROUND + 4];
+const LEVEL_Y = [GROUND + 4, 156, 214, 270, 328, 392];      // collar, then a–e
+// stroke width at the start and end of each level's roots (they taper as they descend)
+const WIDTH = [0, 3.4, 2.0, 1.3, 0.85, 0.5, 0.15];
+const LEVELS = ['section', 'division', 'group', 'class', 'sub-class'];
+const COUNTS = ['21', '', '', '651', '≈ 700'];
+
+interface Node { p: P; level: number; kids: Node[]; pts?: P[] }
+const root: Node = { p: COLLAR, level: 0, kids: [] };
+
+const primaries = [138, 222, 304, 398, 494];
+const fan = [0, 0, 3, 2, 2, 3];          // children per node at the next level
+const gap = [0, 0, 38, 22, 12, 6];
+
+function curve(a: P, b: P, level: number): P[] {
+  const dx = b[0] - a[0], dy = b[1] - a[1];
+  const bend = level === 1 ? 0.12 : 0.3;
+  const w = level === 1 ? 2.5 : 3.2 - level * 0.4;   // lateral wander
+  const ctrl: P[] = [
+    a,
+    [a[0] + dx * bend + R.gauss() * w, a[1] + dy * 0.3],
+    [a[0] + dx * (bend + 0.35) + R.gauss() * w, a[1] + dy * 0.6],
+    [a[0] + dx * 0.9 + R.gauss() * w, a[1] + dy * 0.85],
+    b,
+  ];
+  return sampleCurve(ctrl, level <= 2 ? 5 : 3);
+}
+
+function grow(n: Node) {
+  const L = n.level + 1;
+  if (L > 5) return;
+  const xs = L === 1
+    ? primaries.map((x) => x + R.gauss() * 6)
+    : Array.from({ length: fan[L]! }, (_, k) => n.p[0] + (k - (fan[L]! - 1) / 2) * gap[L]! + R.gauss() * gap[L]! * 0.22);
+  for (const x of xs) {
+    const kid: Node = { p: [x, LEVEL_Y[L]! + R.gauss() * (L === 5 ? 5 : 3)], level: L, kids: [] };
+    kid.pts = curve(n.p, kid.p, L);
+    n.kids.push(kid);
+    grow(kid);
+  }
+}
+grow(root);
+
+// paths by level, so each level is one <path> element (small markup)
+const byLevel: string[] = ['', '', '', '', '', ''];
+const tips: P[] = [];
+(function walk(n: Node) {
+  for (const k of n.kids) {
+    // coarse roots are tapered burin cuts; fine roots are single strokes (keeps markup small)
+    byLevel[k.level] += k.level <= 3
+      ? taper(k.pts!, WIDTH[k.level]!, WIDTH[k.level + 1]!)
+      : line(k.pts!.filter((_, i, a) => i % 3 === 0 || i === a.length - 1));
+    if (k.level === 5) tips.push(k.p);
+    walk(k);
+  }
+})(root);
+
+// the traced prediction: one chain through every level
+const chain: Node[] = [];
+{
+  let n = root;
+  const choice = [3, 1, 0, 1, 2];  // which child at each level
+  for (const c of choice) { n = n.kids[Math.min(c, n.kids.length - 1)]!; chain.push(n); }
+}
+const chainD = chain.map((n) => smooth(n.pts!, 0.3)).join('');
+const tip = chain[chain.length - 1]!.p;
+
+// a light hairline beside primaries, for volume
+const sheen = root.kids.map((k) => {
+  const a: P = [COLLAR[0] + 1.6, COLLAR[1] + 3];
+  const b: P = [k.p[0] + 1.8, k.p[1] - 4];
+  return smooth(curve(a, b, 1), 0.3);
+}).join('');
+
+// root hairs at each tip
+let hairs = '';
+for (const t of tips) {
+  const n = 2 + Math.floor(R.next() * 2);
+  for (let i = 0; i < n; i++) {
+    const a = Math.PI / 2 + R.gauss() * 0.7, l = 3 + R.next() * 5;
+    hairs += `M${t[0].toFixed(1)} ${t[1].toFixed(1)}l${(Math.cos(a) * l).toFixed(1)} ${(Math.sin(a) * l).toFixed(1)}`;
+  }
+}
+
+// soil: stipple, denser near the surface
+const soilBox = { x: 16, y: GROUND + 2, w: 568, h: 318 };
+const soil = int(dots(stipple(480, soilBox, R, () => true, (_x, y) => 0.95 - ((y - GROUND) / 330) * 0.75)));
+const soilFine = int(dots(stipple(300, { x: 16, y: GROUND + 1, w: 568, h: 22 }, R, () => true)));
+
+// pebbles with hatching
+const pebbles = [
+  { c: [148, 300] as P, rx: 14, ry: 8 }, { c: [452, 240] as P, rx: 11, ry: 7 },
+  { c: [236, 362] as P, rx: 9, ry: 5.5 }, { c: [548, 352] as P, rx: 12, ry: 7 }, { c: [62, 200] as P, rx: 8, ry: 5 },
+].map((pb, i) => {
+  const outline = blob(pb.c[0], pb.c[1], pb.rx, pb.ry, R, 0.12, 14);
+  return { id: `${uid}-pb${i}`, d: closed(outline), h: hatch({ x: pb.c[0] - pb.rx, y: pb.c[1] - pb.ry, w: pb.rx * 2, h: pb.ry * 2 }, -38, 2.2, R) };
+});
+
+// seedling above ground
+const leafL: P[] = [[300, 62], [284, 50], [262, 44], [270, 56], [288, 63]];
+const leafR: P[] = [[300, 54], [318, 40], [342, 34], [334, 48], [314, 56]];
+const leafLh = hatch({ x: 258, y: 40, w: 46, h: 26 }, 20, 2.4, R);
+const leafRh = hatch({ x: 298, y: 30, w: 48, h: 28 }, -25, 2.4, R);
+
+// ground line: hand-cut, with a few grass ticks
+const groundD = wobble([18, GROUND], [582, GROUND], R, 0.5, 30);
+let ticks = '';
+for (let x = 24; x < 580; x += 6 + R.next() * 14) {
+  if (Math.abs(x - 300) < 40) continue;
+  const h = 2 + R.next() * 4, lean = R.gauss() * 1.2;
+  ticks += `M${x.toFixed(1)} ${GROUND}l${lean.toFixed(1)} ${(-h).toFixed(1)}`;
+}
+---
+<Frame uid={uid} title={title} desc={desc} numeral="VII" taxon="Classificator interpretabilis" keyText="a–e · levels of the NAF nomenclature">
+  <defs>
+    {pebbles.map((pb) => <clipPath id={pb.id}><path d={pb.d} /></clipPath>)}
+    <clipPath id={`${uid}-lfL`}><path d={closed(leafL)} /></clipPath>
+    <clipPath id={`${uid}-lfR`}><path d={closed(leafR)} /></clipPath>
+  </defs>
+
+  <!-- soil -->
+  <path class="k w08 faint" d={soil} stroke-linecap="round" />
+  <path class="k w10 faint" d={soilFine} stroke-linecap="round" />
+  {pebbles.map((pb) => (<g><path class="bg" d={pb.d} /><path class="k w04" d={pb.h} clip-path={`url(#${pb.id})`} /><path class="k w08" d={pb.d} /></g>))}
+
+  <!-- ground -->
+  <path class="k w10" d={groundD} />
+  <path class="k w05 mid" d={ticks} />
+
+  <!-- roots, coarse to fine -->
+  <path class="fk" d={byLevel[1] + byLevel[2] + byLevel[3]} />
+  <path class="k" style="stroke-width:0.75" d={int(byLevel[4]!)} />
+  <path class="k" style="stroke-width:0.45" d={int(byLevel[5]!)} />
+  <path class="k w04 faint" d={sheen} transform="translate(2.4 1)" />
+  <path class="k w04 mid" d={int(hairs)} />
+
+  <!-- the traced prediction -->
+  <path class="a" style="stroke-width:1.15" d={chainD} />
+  <circle class="fa" cx={tip[0]} cy={tip[1]} r="2.2" />
+  <circle class="a w05" cx={tip[0]} cy={tip[1]} r="6" />
+  <path class="a w05" d={`M${tip[0] + 6} ${tip[1] + 3}L${tip[0] + 26} ${tip[1] + 16}`} />
+  <text class="lbl-a" x={tip[0] + 29} y={tip[1] + 19}>one prediction</text>
+
+  <!-- seedling / shared encoder -->
+  <path class="k w13" d={wobble([300, GROUND + 3], [300, 50], R, 0.4, 6)} />
+  <path class="bg" d={closed(leafL)} /><path class="k w04" d={leafLh} clip-path={`url(#${uid}-lfL)`} /><path class="k w08" d={closed(leafL)} />
+  <path class="bg" d={closed(leafR)} /><path class="k w04" d={leafRh} clip-path={`url(#${uid}-lfR)`} /><path class="k w08" d={closed(leafR)} />
+  <path class="k w05" d="M300 50L300 44" />
+  <path class="k w04" d="M306 78L356 70" />
+  <text class="lbl-k" x="360" y="72">stem · shared encoder</text>
+
+  <!-- level key, left margin -->
+  {LEVELS.map((name, i) => (
+    <g>
+      <path class="k w05" d={`M14 ${LEVEL_Y[i + 1]}h9`} />
+      <text class="lbl-k" x="27" y={LEVEL_Y[i + 1]! + 3}>{String.fromCharCode(97 + i)}.</text>
+      <text class="lbl" x="27" y={LEVEL_Y[i + 1]! + 13}>{name}</text>
+      {COUNTS[i] && <text class="lbl" x="586" y={LEVEL_Y[i + 1]! + 3} text-anchor="end">{COUNTS[i]}</text>}
+    </g>
+  ))}
+</Frame>

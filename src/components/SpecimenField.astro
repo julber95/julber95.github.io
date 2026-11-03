@@ -1,0 +1,139 @@
+---
+import { clusters } from '../data/field';
+import { getPlates, hrefOf } from '../lib/plates';
+
+const plates = await getPlates();
+const runtime = clusters.map((c) => {
+  const p = plates.find((x) => x.id === c.id)!;
+  return { ...c, href: hrefOf(p), title: p.data.short, numeral: p.data.numeral, taxon: p.data.taxon };
+});
+---
+<section class="field" data-field data-clusters={JSON.stringify(runtime)} aria-labelledby="field-title">
+  <canvas aria-hidden="true"></canvas>
+
+  <!-- numerals are real links: they work without JS and are the keyboard path into the field -->
+  <ol class="field__labels" role="list" aria-label="Plates in the field">
+    {runtime.map((c) => (
+      <li>
+        <a
+          class="field__label"
+          href={c.href}
+          data-cluster={c.id}
+          style={`--dx:${c.d[0]};--dy:${c.d[1]};--mx:${c.m[0]};--my:${c.m[1]}`}
+          data-side={c.label}
+        >
+          <span aria-hidden="true">{c.numeral}</span>
+          <span class="sr-only">Plate {c.numeral}: {c.title}</span>
+        </a>
+      </li>
+    ))}
+  </ol>
+
+  <div class="field__caption" data-caption aria-hidden="true">
+    <span class="label accent" data-c-num></span>
+    <span class="field__caption-title" data-c-title></span>
+    <span class="field__caption-taxon taxon" data-c-taxon></span>
+  </div>
+
+  <div class="field__head page">
+    <p class="field__kicker label">Vol. I · Plates I–VII · {plates.length} specimens</p>
+    <h1 id="field-title" class="field__title">
+      Julien Bernardi keeps <em>an atlas</em> of the models he has taken&nbsp;apart.
+    </h1>
+  </div>
+
+  <p class="field__fig mono" aria-hidden="true">
+    <span>Fig. 1</span> Specimen field: ink points denoised into one cluster per plate. <span class="field__hint">Hover to identify, click to open.</span>
+  </p>
+  <span class="field__mark field__mark--tl" aria-hidden="true"></span>
+  <span class="field__mark field__mark--tr" aria-hidden="true"></span>
+  <span class="reg field__reg" aria-hidden="true"></span>
+</section>
+
+<script>
+  import { mountField } from '../scripts/field';
+  const root = document.querySelector<HTMLElement>('[data-field]');
+  if (root) {
+    const go = () => mountField(root);
+    'requestIdleCallback' in window ? requestIdleCallback(go, { timeout: 250 }) : setTimeout(go, 60);
+  }
+</script>
+
+<style>
+  .field {
+    position: relative;
+    height: 100svh;
+    min-height: 620px;
+    overflow: hidden;
+    isolation: isolate;
+  }
+  canvas { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 0; }
+
+  .field__labels { position: absolute; inset: 0; z-index: 2; margin: 0; pointer-events: none; }
+  .field__label {
+    position: absolute; left: 0; top: 0;
+    /* SSR position (before JS takes over with exact pixel offsets) */
+    transform: translate(calc(var(--dx) * 100vw), calc(var(--dy) * 100svh));
+    pointer-events: auto;
+    font: 500 0.75rem/1 var(--f-mono); letter-spacing: .08em; color: var(--ink-soft);
+    text-decoration: none; padding: .55em .6em; min-height: 28px; display: inline-flex; align-items: center;
+    transition: color var(--dur-1) var(--ease);
+    white-space: nowrap;
+  }
+  .field__label::before { content: ''; display: inline-block; flex: none; width: 14px; height: var(--hair); background: currentColor; vertical-align: middle; margin-right: .45em; opacity: .7; }
+  .field__label[data-side$='w']::before { display: none; }
+  .field__label[data-side$='w']::after { content: ''; display: inline-block; width: 14px; height: var(--hair); background: currentColor; vertical-align: middle; margin-left: .45em; opacity: .7; }
+  .field__label:hover, .field__label.is-active { color: var(--accent); }
+  @media (max-width: 719px), (max-aspect-ratio: 19/20) {
+    .field__label { transform: translate(calc(var(--mx) * 100vw), calc(var(--my) * 100svh)); }
+  }
+
+  .field__caption {
+    position: absolute; left: 0; top: 0; z-index: 3; pointer-events: none;
+    display: grid; gap: .15rem; max-width: 18rem;
+    padding: .2rem 0 .2rem .9rem; border-left: var(--hair) solid var(--accent);
+    opacity: 0; transition: opacity 260ms var(--ease);
+  }
+  .field__caption[data-side='l'] { border-left: 0; border-right: var(--hair) solid var(--accent); padding: .2rem .9rem .2rem 0; text-align: right; }
+  .field__caption.is-on { opacity: 1; }
+  .field__caption-title { font-family: var(--f-display); font-size: 1.45rem; line-height: 1.1; font-weight: 400; letter-spacing: -.01em; }
+  .field__caption-taxon { font-size: 1rem; color: var(--ink-soft); }
+
+  .field__head {
+    position: absolute; left: 0; right: 0; bottom: clamp(4.5rem, 9vh, 7rem); z-index: 1; pointer-events: none;
+  }
+  .field__kicker { grid-column: 1 / span 6; margin-bottom: var(--s-4); }
+  .field__title {
+    grid-column: 1 / span 8;
+    font-size: clamp(3rem, 1.2rem + 5.4vw, 7.6rem);
+    font-weight: 350;
+    line-height: 0.95;
+    letter-spacing: -0.03em;
+    max-width: 15ch;
+    font-variation-settings: 'opsz' 72;
+    text-wrap: balance;
+  }
+  .field__title em { font-weight: 320; color: var(--accent); }
+  .field__fig {
+    position: absolute; left: var(--gutter); right: var(--gutter); bottom: var(--s-5); z-index: 1;
+    display: flex; gap: .8em; color: var(--ink-soft); font-size: 0.6875rem; border-top: var(--hair) solid var(--rule); padding-top: var(--s-3);
+  }
+  .field__fig > span:first-child { color: var(--ink); white-space: nowrap; }
+  .field__hint { margin-left: auto; }
+  @media (max-width: 1000px) { .field__hint { display: none; } }
+  .field__mark { position: absolute; width: 16px; height: 16px; border: 0 solid var(--ink-soft); opacity: .6; z-index: 1; }
+  .field__mark--tl { top: 76px; left: calc(var(--gutter) - 8px); border-top-width: 1px; border-left-width: 1px; }
+  .field__mark--tr { top: 76px; right: calc(var(--gutter) - 8px); border-top-width: 1px; border-right-width: 1px; }
+  .field__reg { position: absolute; right: var(--gutter); bottom: calc(var(--s-5) + 2.2rem); z-index: 1; }
+  @media (max-width: 1100px) { .field__reg { display: none; } }
+
+  @media (max-width: 719px) {
+    .field { min-height: 600px; }
+    .field__head { bottom: 4.8rem; }
+    .field__title { font-size: clamp(2.6rem, 11.5vw, 3.6rem); max-width: 11ch; }
+    .field__hint { display: none; }
+    .field__fig { left: 16px; right: 16px; }
+    .field__mark--tl, .field__mark--tr { top: 62px; }
+    .field__reg { display: none; }
+  }
+</style>

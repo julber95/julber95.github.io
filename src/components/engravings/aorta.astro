@@ -1,0 +1,233 @@
+---
+/* Plate VI — a segment of aneurysmal aortic wall in transverse section.
+   Intima, media with wavy elastic lamellae, adventitia with vasa vasorum; calcified plaques;
+   inflammatory infiltrates in accent. Inset: slide tiles mean-pooled to one embedding. */
+import Frame from './Frame.astro';
+import { rng, line, smooth, wobble, hatch, closed, inPoly, int, type P } from '../../lib/engrave';
+
+interface Props { uid: string; title: string; desc: string }
+const { uid, title, desc } = Astro.props;
+const R = rng(6006);
+
+// ── local helpers ────────────────────────────────
+const DEG = Math.PI / 180;
+const CX = 300, CY = -82;                         // centre of the vessel, far above the plate
+const pol = (th: number, r: number): P => [CX + r * Math.sin(th), CY + r * Math.cos(th)];
+const toPol = (x: number, y: number) => ({ th: Math.atan2(x - CX, y - CY), r: Math.hypot(x - CX, y - CY) });
+const ri = (n: number) => Math.round(n);
+
+/** Compact stipple: whole px, near-duplicates dropped, relative moves in a serpentine scan. */
+function rdots(pts: P[], minGap = 1.6, band = 6): string {
+  const seen = new Map<string, P[]>();
+  const kept: P[] = [];
+  for (const q of pts) {
+    const p: P = [ri(q[0]), ri(q[1])];
+    const kx = Math.floor(p[0] / 4), ky = Math.floor(p[1] / 4);
+    let ok = true;
+    for (let i = -1; i <= 1 && ok; i++) for (let j = -1; j <= 1 && ok; j++)
+      for (const o of seen.get(`${kx + i},${ky + j}`) ?? []) if (Math.hypot(o[0] - p[0], o[1] - p[1]) < minGap) { ok = false; break; }
+    if (!ok) continue;
+    const key = `${kx},${ky}`; (seen.get(key) ?? seen.set(key, []).get(key)!).push(p); kept.push(p);
+  }
+  kept.sort((a, b) => { const ba = Math.floor(a[1] / band), bb = Math.floor(b[1] / band); return ba - bb || (ba % 2 ? b[0] - a[0] : a[0] - b[0]); });
+  let d = '', c: P | null = null;
+  for (const p of kept) { d += c ? `m${p[0] - c[0]} ${p[1] - c[1]}h0` : `M${p[0]} ${p[1]}h0`; c = p; }
+  return d;
+}
+
+// ── layers (radii) and extent ──
+const T0 = -40 * DEG, T1 = 40 * DEG;
+const R_IN = 262, R_IEL = 274, R_EEL = 352, R_OUT = 408;
+// irregular radii along the arc
+const ph = [R.next() * 6, R.next() * 6, R.next() * 6];
+const rIn = (th: number) => R_IN + 1.1 * Math.sin(th * 31 + ph[0]!) + 0.5 * Math.sin(th * 73 + ph[1]!);
+const rIel = (th: number) => R_IEL + 2.2 * Math.sin(th * 23 + ph[1]!) + 1.4 * Math.sin(th * 61);
+const rEel = (th: number) => R_EEL + 3 * Math.sin(th * 17 + ph[2]!);
+const rOut = (th: number) => R_OUT + 4 * Math.sin(th * 17 + ph[0]!) + 2 * Math.sin(th * 41 + ph[2]!);
+
+const NS = 64;
+const arc = (fr: (t: number) => number, a = T0, b = T1, n = NS): P[] =>
+  Array.from({ length: n + 1 }, (_, i) => { const t = a + ((b - a) * i) / n; return pol(t, fr(t)); });
+const innerEdge = arc(rIn), outerEdge = arc((t) => rOut(t) + R.gauss() * 0.6);
+const wall: P[] = [...innerEdge, ...[...outerEdge].reverse()];
+const ielD = smooth(arc(rIel, T0, T1, 40), 0.5);
+const eelD = smooth(arc(rEel, T0, T1, 40), 0.5);
+
+// ── calcified plaques: lenses at the intima–media junction ──
+const plaques = [
+  { th: -21 * DEG, w: 19 / R_IN, depth: 15 },
+  { th: 9 * DEG, w: 13 / R_IN, depth: 11 },
+  { th: 27 * DEG, w: 9 / R_IN, depth: 8 },
+].map((pq, i) => {
+  const pts: P[] = [];
+  for (let k = 0; k <= 12; k++) { const u = -1 + k / 6; if (u > 1) break; const t = pq.th + u * pq.w; pts.push(pol(t, rIn(t) + 4 + Math.abs(R.gauss()) * 0.3)); }
+  for (let k = 12; k >= 0; k--) { const u = -1 + k / 6; const t = pq.th + u * pq.w; pts.push(pol(t, rIn(t) + 5 + pq.depth * (1 - u * u) ** 0.7 + R.gauss() * 0.5)); }
+  const xs = pts.map((p) => p[0]), ys = pts.map((p) => p[1]);
+  const box = { x: Math.min(...xs) - 2, y: Math.min(...ys) - 2, w: Math.max(...xs) - Math.min(...xs) + 4, h: Math.max(...ys) - Math.min(...ys) + 4 };
+  return { id: `${uid}-pq${i}`, pts, d: closed(pts, 0.5), h: hatch(box, -40, 1.7, R) + hatch(box, 42, 2.2, R) };
+});
+const inPlaque = (x: number, y: number, pad = 0) => plaques.some((pq) => inPoly(pq.pts, x, y) || (pad > 0 && pq.pts.some((p) => Math.hypot(p[0] - x, p[1] - y) < pad)));
+
+// ── vasa vasorum and inflammatory infiltrates ──
+const vasa = [
+  { c: pol(-24 * DEG, 382), r: 6 },
+  { c: pol(17 * DEG, 386), r: 4.8 },
+  { c: pol(3 * DEG, 393), r: 3.4 },
+];
+const infl = [
+  { c: pol(-24.6 * DEG, 383), r: 14, n: 50, hole: vasa[0] },
+  { c: pol(16.6 * DEG, 387), r: 11, n: 34, hole: vasa[1] },
+  { c: pol(-6 * DEG, 372), r: 8, n: 20 },
+  { c: pol(4 * DEG, 336), r: 6.5, n: 14 },
+];
+const inflPts: P[] = [];
+for (const cl of infl) {
+  let n = 0, guard = 0;
+  while (n < cl.n && guard++ < 2000) {
+    const a = R.next() * Math.PI * 2, rr = Math.sqrt(R.next()) * cl.r;
+    const p: P = [cl.c[0] + Math.cos(a) * rr * 1.25, cl.c[1] + Math.sin(a) * rr * 0.85];
+    if (cl.hole && Math.hypot(p[0] - cl.hole.c[0], p[1] - cl.hole.c[1]) < cl.hole.r + 2) continue;
+    if (inflPts.some((q) => Math.hypot(q[0] - p[0], q[1] - p[1]) < 2.3)) continue;
+    inflPts.push(p); n++;
+  }
+}
+const nearInfl = (x: number, y: number) => infl.some((cl) => Math.hypot((x - cl.c[0]) / 1.25, (y - cl.c[1]) / 0.85) < cl.r + 2.5);
+const nearVas = (x: number, y: number) => vasa.some((v) => Math.hypot(x - v.c[0], y - v.c[1]) < v.r + 1.5);
+
+// ── media: wavy elastic lamellae (quadratic waves, restarted every few crests) ──
+let lam = '';
+const NL = 21;
+for (let i = 0; i < NL; i++) {
+  const base = R_IEL + 4 + ((R_EEL - R_IEL - 7) * i) / (NL - 1);
+  const amp = 0.8 + R.next() * 0.4;
+  const half = 5.5 + R.next() * 1.5;                        // half wavelength, px
+  const dth = half / base;
+  const phase = R.next() > 0.5 ? 1 : -1;
+  let t = T0 + 0.004, run = 0, sign = phase, cur = '';
+  const flush = () => { if (run >= 2) lam += cur; cur = ''; run = 0; };
+  while (t < T1 - 0.004) {
+    const rr = (th: number) => base + (rEel(th) - R_EEL) * (i / NL) + (rIel(th) - R_IEL) * (1 - i / NL);
+    const a = pol(t, rr(t)), m = pol(t + dth / 2, rr(t + dth / 2) + amp * sign), b = pol(t + dth, rr(t + dth));
+    // fragmentation: breaks at random, and wherever plaques or infiltrates interrupt the wall
+    const broken = inPlaque(m[0], m[1], 2.5) || nearInfl(m[0], m[1]) || R.next() < 0.012;
+    if (broken) { flush(); t += dth * (1 + Math.floor(R.next() * 2)); sign = -sign; continue; }
+    if (run === 0) cur = `M${ri(a[0])} ${ri(a[1])}Q${ri(m[0] * 2) / 2} ${ri(m[1] * 2) / 2} ${ri(b[0])} ${ri(b[1])}`;
+    else if (run % 7 === 0) cur += `Q${ri(m[0] * 2) / 2} ${ri(m[1] * 2) / 2} ${ri(b[0])} ${ri(b[1])}`;
+    else cur += `T${ri(b[0])} ${ri(b[1])}`;
+    run++; t += dth; sign = -sign;
+  }
+  flush();
+}
+
+// ── stipple: intima fine, media sparse nuclei, adventitia loose and fading outward ──
+const fine: P[] = [], mid: P[] = [];
+{
+  const S = 2.7;
+  for (let y = 110; y < 345; y += S) for (let x = 20; x < 580; x += S) {
+    const p: P = [x + R.next() * S, y + R.next() * S];
+    if (!inPoly(wall, p[0], p[1]) || inPlaque(p[0], p[1], 1.5) || nearInfl(p[0], p[1]) || nearVas(p[0], p[1])) continue;
+    const { th, r } = toPol(p[0], p[1]);
+    let dn = 0;
+    if (r < rIel(th) - 1) dn = 0.36;                                           // intima
+    else if (r < rEel(th)) dn = 0.06;                                          // media
+    else { const u = (r - rEel(th)) / (rOut(th) - rEel(th)); dn = 0.55 - u * 0.4 + 0.12 * Math.sin(th * 90 + r * 0.2); }  // adventitia
+    if (R.next() < dn) (r < rIel(th) ? fine : r < rEel(th) ? fine : mid).push(p);
+  }
+}
+// adventitial collagen: short loose wavy strokes, running round the wall
+let coll = '';
+for (let k = 0; k < 34; k++) {
+  const t = T0 + 0.02 + R.next() * (T1 - T0 - 0.04), r = R_EEL + 7 + R.next() * 42;
+  const p0 = pol(t, r);
+  if (nearInfl(p0[0], p0[1]) || nearVas(p0[0], p0[1])) continue;
+  const len = (14 + R.next() * 20) / r;
+  coll += smooth([pol(t, r), pol(t + len / 3, r + R.gauss() * 1.6), pol(t + (2 * len) / 3, r + R.gauss() * 1.6), pol(t + len, r + R.gauss() * 1.2)], 0.5);
+}
+
+// cut faces at the two ends of the segment
+const cutL = wobble(pol(T0, rIn(T0)), pol(T0, rOut(T0)), R, 0.5, 6);
+const cutR = wobble(pol(T1, rIn(T1)), pol(T1, rOut(T1)), R, 0.5, 6);
+
+// vasa vasorum: hatched annular walls
+const vasaRing = vasa.map((v, i) => ({
+  id: `${uid}-vv${i}`, ...v, lr: v.r * 0.5,
+  h: hatch({ x: v.c[0] - v.r, y: v.c[1] - v.r, w: v.r * 2, h: v.r * 2 }, -40, 1.6, R),
+}));
+const ring = (c: P, r: number, rl: number) =>
+  `M${c[0] - r} ${c[1]}a${r} ${r} 0 1 0 ${2 * r} 0a${r} ${r} 0 1 0 ${-2 * r} 0ZM${c[0] - rl} ${c[1]}a${rl} ${rl} 0 1 0 ${2 * rl} 0a${rl} ${rl} 0 1 0 ${-2 * rl} 0Z`;
+
+// ── inset: 4×4 slide tiles → one pooled embedding ──
+const IX = 448, IY = 32, TS = 9;
+let grid = '';
+for (let k = 0; k <= 4; k++) {
+  grid += `M${IX + k * TS} ${IY}v${4 * TS}M${IX} ${IY + k * TS}h${4 * TS}`;
+}
+const tileDots: P[] = [];
+for (let k = 0; k < 16; k++) {
+  const tx = IX + (k % 4) * TS, ty = IY + Math.floor(k / 4) * TS, n = 2 + Math.floor(R.next() * 4);
+  for (let j = 0; j < n; j++) tileDots.push([tx + 2 + R.next() * (TS - 4), ty + 2 + R.next() * (TS - 4)]);
+}
+const AX0 = IX + 4 * TS + 6, AX1 = AX0 + 50, AY = IY + 2 * TS;
+const EX = AX1 + 6, ES = 9;
+const embH = hatch({ x: EX, y: AY - ES / 2, w: ES, h: ES }, -40, 1.8, R);
+
+// ── callouts ──
+const aP = pol(-8 * DEG, rIn(-8 * DEG) + 4);
+const bP = pol(23 * DEG, 318), bE = pol(23 * DEG, 440);
+const cP = pol(-14 * DEG, 388), cE = pol(-14 * DEG, 438);
+---
+<Frame uid={uid} title={title} desc={desc} numeral="VI" taxon="Aorta inflammata" keyText="red · inflammatory infiltrates">
+  <defs>
+    {plaques.map((pq) => <clipPath id={pq.id}><path d={pq.d} /></clipPath>)}
+    {vasaRing.map((v) => <clipPath id={v.id}><path d={ring(v.c, v.r, v.lr)} clip-rule="evenodd" /></clipPath>)}
+    <clipPath id={`${uid}-wall`}><path d={line(wall) + 'Z'} /></clipPath>
+    <clipPath id={`${uid}-emb`}><rect x={EX} y={AY - ES / 2} width={ES} height={ES} /></clipPath>
+  </defs>
+
+  <!-- tissue -->
+  <g clip-path={`url(#${uid}-wall)`}>
+  <path class="k mid" style="stroke-width:0.85" d={rdots(fine)} />
+  <path class="k" style="stroke-width:0.95" d={rdots(mid)} />
+  <path class="k w04 mid" d={int(coll)} />
+  <path class="k" style="stroke-width:0.45" d={lam} />
+  <path class="k w05" d={ielD} />
+  <path class="k w05 mid" d={eelD} />
+  </g>
+
+  <!-- calcified plaques -->
+  {plaques.map((pq) => (<g><path class="bg" d={pq.d} /><path class="k w04" d={int(pq.h)} clip-path={`url(#${pq.id})`} /><path class="k w08" d={pq.d} /></g>))}
+
+  <!-- vasa vasorum -->
+  {vasaRing.map((v) => (<g>
+    <circle class="bg" cx={v.c[0]} cy={v.c[1]} r={v.r} />
+    <path class="k w04" d={int(v.h)} clip-path={`url(#${v.id})`} />
+    <circle class="k w08" cx={v.c[0]} cy={v.c[1]} r={v.r} />
+    <circle class="k w05" cx={v.c[0]} cy={v.c[1]} r={v.lr} />
+  </g>))}
+
+  <!-- contours: lumen edge, adventitial edge, cut faces -->
+  <path class="k w13" d={smooth(innerEdge, 0.5)} />
+  <path class="k w08" d={smooth(outerEdge, 0.5)} />
+  <path class="k w10" d={cutL + cutR} />
+
+  <!-- inflammatory infiltrates -->
+  <path class="a" style="stroke-width:1.9" d={rdots(inflPts, 1.8)} />
+
+  <!-- inset: patch embedding -->
+  <rect class="k w04" x={IX - 12} y={IY - 12} width={EX + ES + 12 - (IX - 12)} height={4 * TS + 24} />
+  <path class="k w04" d={grid} />
+  <path class="k w05 faint" d={rdots(tileDots, 1.2)} />
+  <path class="k w05" d={wobble([AX0, AY], [AX1, AY], R, 0.25, 3) + `M${AX1 - 4} ${AY - 2.5}L${AX1} ${AY}L${AX1 - 4} ${AY + 2.5}`} />
+  <path class="k w04" d={int(embH)} clip-path={`url(#${uid}-emb)`} />
+  <rect class="k w08" x={EX} y={AY - ES / 2} width={ES} height={ES} />
+  <text class="lbl" x={(AX0 + AX1) / 2 + 3} y={AY - 6} text-anchor="middle">mean-pool</text>
+
+  <!-- callouts -->
+  <path class="k w04" d={`M${aP[0]} ${aP[1] - 6}L${aP[0] - 26} ${aP[1] - 40}h-5`} />
+  <text class="lbl-k" x={aP[0] - 34} y={aP[1] - 37} text-anchor="end">a. intima</text>
+  <path class="k w04" d={`M${bP[0]} ${bP[1]}L${bE[0]} ${bE[1]}`} />
+  <text class="lbl-k" x={bE[0] + 3} y={bE[1] + 11}>b. media</text>
+  <path class="k w04" d={`M${cP[0]} ${cP[1]}L${cE[0]} ${cE[1]}`} />
+  <text class="lbl-k" x={cE[0] - 3} y={cE[1] + 11} text-anchor="end">c. adventitia</text>
+  <text class="lbl" x="300" y="128" text-anchor="middle">lumen</text>
+</Frame>

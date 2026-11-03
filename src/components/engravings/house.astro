@@ -1,0 +1,259 @@
+---
+/* Plate II — Real-estate price prediction: a two-storey house in cross-section, drawn like a
+   surveyor's plate. Cut walls hatched, rooms lettered, surfaces dimensioned, one room imputed (k-NN),
+   an energy ladder and a north arrow; the price tag alone is left blank, in accent. */
+import Frame from './Frame.astro';
+import { rng, line, smooth, wobble, dots, stipple, inPoly, int, type P, type Rng } from '../../lib/engrave';
+
+interface Props { uid: string; title: string; desc: string }
+const { uid, title, desc } = Astro.props;
+const R = rng(2002);
+const deg = Math.PI / 180;
+
+/** Hatching that clips itself to any region given by `inside` (no <clipPath> needed). */
+function hatchIn(box: { x: number; y: number; w: number; h: number }, angle: number, gap: number, Rg: Rng,
+  inside: (x: number, y: number) => boolean, step = 0.8): string {
+  const a = angle * deg, ca = Math.cos(a), sa = Math.sin(a);
+  const cx = box.x + box.w / 2, cy = box.y + box.h / 2;
+  const half = Math.hypot(box.w, box.h) / 2 + gap;
+  let d = '';
+  for (let o = -half; o <= half; o += gap) {
+    const off = o + Rg.gauss() * 0.25;
+    let run: P | null = null, last: P | null = null;
+    for (let s = -half; s <= half + step; s += step) {
+      const x = cx + ca * s - sa * off, y = cy + sa * s + ca * off;
+      if (s <= half && inside(x, y)) { if (!run) run = [x, y]; last = [x, y]; }
+      else if (run && last) {
+        if (Math.hypot(last[0] - run[0], last[1] - run[1]) >= 1) d += `M${run[0].toFixed(1)} ${run[1].toFixed(1)}L${last[0].toFixed(1)} ${last[1].toFixed(1)}`;
+        run = null; last = null;
+      }
+    }
+  }
+  return d;
+}
+type Rect = [number, number, number, number];   // x0 y0 x1 y1
+const inR = (rs: Rect[]) => (x: number, y: number) => rs.some(([a, b, c, d]) => x > a && x < c && y > b && y < d);
+const box = (rs: Rect[]) => {
+  const x0 = Math.min(...rs.map((r) => r[0])), y0 = Math.min(...rs.map((r) => r[1]));
+  return { x: x0, y: y0, w: Math.max(...rs.map((r) => r[2])) - x0, h: Math.max(...rs.map((r) => r[3])) - y0 };
+};
+/** Hand-cut outline of a rectangle. */
+const rectD = ([a, b, c, d]: Rect, amp = 0.25) =>
+  wobble([a, b], [c, b], R, amp) + wobble([c, b], [c, d], R, amp) + wobble([c, d], [a, d], R, amp) + wobble([a, d], [a, b], R, amp);
+
+// ── geometry ─────────────────────────────────────
+const GROUND = 330;
+const XL = 205, XR = 395, T = 9;          // outer walls
+const TOP = 182, F1 = 250, F1B = 257, F0 = 326;   // wall top, first-floor slab, ground-floor slab top
+const XM = 297, TM = 6;                   // party wall between rooms
+
+// cut walls (with window and door openings)
+const walls: Rect[] = [
+  // left outer wall: windows on both storeys
+  [XL, TOP + 4, XL + T, 200], [XL, 232, XL + T, 276], [XL, 304, XL + T, F0 + 8],
+  // right outer wall
+  [XR - T, TOP + 4, XR, 200], [XR - T, 232, XR, 276], [XR - T, 304, XR, F0 + 8],
+  // inner walls with door openings
+  [XM, TOP + 4, XM + TM, 204], [XM, F1B, XM + TM, 280],
+];
+const slabs: Rect[] = [
+  [XL - 4, TOP - 2, XR + 4, TOP + 4],      // top plate / ceiling
+  [XL + T, F1, XR - T, F1B],               // first floor
+];
+const footing: Rect[] = [[XL - 6, F0, XR + 6, F0 + 8], [XL - 8, F0 + 8, XL + T + 6, F0 + 22], [XR - T - 6, F0 + 8, XR + 8, F0 + 22]];
+const windows = [
+  [XL, 200, 232], [XL, 276, 304], [XR - T, 200, 232], [XR - T, 276, 304],
+] as const;
+
+const wallHatch = hatchIn(box([...walls, ...slabs]), 45, 2.2, R, inR([...walls, ...slabs]));
+const wallLines = [...walls, ...slabs].map((r) => rectD(r)).join('');
+// concrete footing: stipple (aggregate) instead of hatching
+const footD = footing.map((r) => rectD(r, 0.2)).join('');
+const footDots = int(dots(stipple(170, box(footing), R, inR(footing))));
+
+// windows in section: two panes of glass in the wall thickness, sill below
+let glass = '';
+for (const [x, y0, y1] of windows) {
+  glass += `M${x + 3.5} ${y0}V${y1}M${x + 5.5} ${y0}V${y1}`;
+  glass += `M${x - 3} ${y1}H${x + T + 3}`;
+}
+
+// roof: rafter band in section, tiles along the top, a chimney on the right slope
+const RIDGE: P = [300, 98];
+const EL: P = [XL - 24, TOP + 8], ER: P = [XR + 24, TOP + 8];
+const RT = 9;                    // roof thickness (vertical)
+const roofPoly: P[] = [EL, RIDGE, ER, [ER[0], ER[1] + RT], [RIDGE[0], RIDGE[1] + RT], [EL[0], EL[1] + RT]];
+const slopeY = (x: number) => x < RIDGE[0]
+  ? EL[1] + ((x - EL[0]) / (RIDGE[0] - EL[0])) * (RIDGE[1] - EL[1])
+  : RIDGE[1] + ((x - RIDGE[0]) / (ER[0] - RIDGE[0])) * (ER[1] - RIDGE[1]);
+const CH: Rect = [348, 84, 364, 0];
+const chimPoly: P[] = [[CH[0], CH[1]], [CH[2], CH[1]], [CH[2], slopeY(CH[2]) + 2], [CH[0], slopeY(CH[0]) + 2]];
+const roofHatch = hatchIn({ x: EL[0], y: RIDGE[1], w: ER[0] - EL[0], h: EL[1] + RT - RIDGE[1] }, 45, 2.2, R, (x, y) => inPoly(roofPoly, x, y));
+const chimHatch = hatchIn({ x: CH[0], y: CH[1], w: 16, h: 70 }, -45, 2.4, R, (x, y) => inPoly(chimPoly, x, y) && x > CH[0] + 6);
+const roofD = line(roofPoly) + 'Z';
+// tile courses: small overlapping scales riding on the outer slope
+let tiles = '';
+for (const [a, b] of [[EL, RIDGE], [RIDGE, ER]] as [P, P][]) {
+  const len = Math.hypot(b[0] - a[0], b[1] - a[1]), ux = (b[0] - a[0]) / len, uy = (b[1] - a[1]) / len;
+  const nx = uy, ny = -ux;      // outward normal (up)
+  const sgn = a === EL ? 1 : -1;
+  for (let s = 5; s < len - 3; s += 6.5) {
+    const x = a[0] + ux * s, y = a[1] + uy * s;
+    if (x > CH[0] - 2 && x < CH[2] + 2) continue;
+    const o = sgn * 1;
+    tiles += `M${(x - ux * 3).toFixed(1)} ${(y - uy * 3).toFixed(1)}l${(nx * 2.6 * o + ux * 3).toFixed(1)} ${(ny * 2.6 * o + uy * 3).toFixed(1)}`;
+  }
+}
+tiles += line([[EL[0] - 1, EL[1] - 2.4], [RIDGE[0], RIDGE[1] - 2.8], [ER[0] + 1, ER[1] - 2.4]]);
+// attic: in the roof's shadow, lightly hatched
+const atticPoly: P[] = [[XL - 2, TOP - 2], [RIDGE[0], RIDGE[1] + RT], [XR + 2, TOP - 2]];
+const attic = hatchIn({ x: XL, y: RIDGE[1], w: XR - XL, h: TOP - RIDGE[1] }, -40, 4, R, (x, y) => inPoly(atticPoly, x, y));
+// attic: a king post and collar tie, finer
+const truss = `M300 ${RIDGE[1] + RT}V${TOP - 2}M254 ${slopeY(254) + RT}H346`;
+
+
+// room d: imputed by k-nearest neighbours: a dotted inner outline
+const IMP: Rect = [XM + TM + 7, TOP + 11, XR - T - 7, F1 - 9];
+const impPts: P[] = [];
+{
+  const [a, b, c, d] = IMP;
+  for (let x = a; x <= c; x += 3.2) { impPts.push([x, b], [x, d]); }
+  for (let y = b + 3.2; y < d; y += 3.2) { impPts.push([a, y], [c, y]); }
+}
+
+// ── ground and survey ─────────────────────────────
+const groundL = wobble([18, GROUND], [XL - 8, GROUND], R, 0.45, 10);
+const groundR = wobble([XR + 8, GROUND], [582, GROUND], R, 0.45, 10);
+let ticks = '';
+for (let x = 22; x < 580; x += 5 + R.next() * 12) {
+  if (x > XL - 14 && x < XR + 14) continue;
+  ticks += `M${x.toFixed(1)} ${GROUND}l${(R.gauss() * 1).toFixed(1)} ${(-(1.5 + R.next() * 3)).toFixed(1)}`;
+}
+const soilIn = (x: number, y: number) => !inR(footing)(x, y) && !(x > XL - 10 && x < XR + 10 && y < F0 + 24);
+const soil = int(dots(stipple(420, { x: 18, y: GROUND + 2, w: 564, h: 86 }, R, soilIn, (_x, y) => 0.95 - ((y - GROUND) / 90) * 0.8)));
+const pebbles = [[118, 352, 5, 3], [470, 372, 6, 3.4], [262, 390, 4, 2.4], [532, 346, 4, 2.5]] as const;
+const pebH = pebbles.map(([x, y, rx, ry]) => hatchIn({ x: x - rx, y: y - ry, w: rx * 2, h: ry * 2 }, -40, 1.6, R, (px, py) => ((px - x) / rx) ** 2 + ((py - y) / ry) ** 2 < 0.85 && px + py > x + y - 1)).join('');
+const pebD = pebbles.map(([x, y, rx, ry]) => `M${x - rx} ${y}a${rx} ${ry} 0 1 0 ${rx * 2} 0a${rx} ${ry} 0 1 0 ${-rx * 2} 0`).join('');
+
+// boundary stakes of the plot
+const S0 = 52, S1 = 548;
+const stakes = `M${S0} ${GROUND - 9}V${GROUND + 6}M${S1} ${GROUND - 9}V${GROUND + 6}`;
+
+// dimension lines (architect's slash ticks)
+const tick = (x: number, y: number) => `M${x - 2.5} ${y + 2.5}L${x + 2.5} ${y - 2.5}`;
+const tickV = (x: number, y: number) => `M${x - 2.5} ${y + 2.5}L${x + 2.5} ${y - 2.5}`;
+const DS = 364, DL = 404, DV = 186;
+const dims =
+  // SIZE: across the house, under the footing
+  `M${XL} ${F0 + 26}V${DS + 4}M${XR} ${F0 + 26}V${DS + 4}M${XL} ${DS}H${XR}` + tick(XL, DS) + tick(XR, DS) +
+  // LAND_SIZE: between the stakes
+  `M${S0} ${GROUND + 10}V${DL + 4}M${S1} ${GROUND + 10}V${DL + 4}M${S0} ${DL}H${S1}` + tick(S0, DL) + tick(S1, DL) +
+  // NB_ROOMS: storey heights on the left, one tick per floor
+  `M${DV} ${TOP + 22}V${F0}M${DV - 4} ${F0}H${XL - 10}M${DV - 4} ${F1B}H${XL - 2}M${DV - 4} ${TOP + 22}H${DV + 4}` +
+  tickV(DV, F0) + tickV(DV, F1B) + tickV(DV, TOP + 22);
+
+// energy ladder A–G: bars lengthen and darken from A to G
+const LAD = { x: 36, y: 168, h: 11, g: 3.5 };
+const bars = 'ABCDEFG'.split('').map((ch, i) => {
+  const w = 30 + i * 7, y = LAD.y + i * (LAD.h + LAD.g);
+  const poly: P[] = [[LAD.x, y], [LAD.x + w, y], [LAD.x + w + 5, y + LAD.h / 2], [LAD.x + w, y + LAD.h], [LAD.x, y + LAD.h]];
+  const gap = [0, 4.2, 3.4, 2.8, 2.3, 1.9, 1.6][i]!;
+  const h = gap ? hatchIn({ x: LAD.x, y, w: w + 6, h: LAD.h }, -45, gap, R, (x, yy) => inPoly(poly, x, yy) && x > LAD.x + 12) : '';
+  return { ch, y, d: line(poly) + 'Z', h };
+});
+
+// north arrow / compass rose for EXPOSITION
+const CR: P = [530, 78];
+const point = (ang: number, L: number, w: number): [P[], P[]] => {
+  const a = (ang - 90) * deg, tip: P = [CR[0] + Math.cos(a) * L, CR[1] + Math.sin(a) * L];
+  const l: P = [CR[0] + Math.cos(a - Math.PI / 2) * w, CR[1] + Math.sin(a - Math.PI / 2) * w];
+  const r: P = [CR[0] + Math.cos(a + Math.PI / 2) * w, CR[1] + Math.sin(a + Math.PI / 2) * w];
+  return [[CR, l, tip], [CR, tip, r]];
+};
+let roseLines = '', roseFill = '';
+for (const [ang, L, w] of [[0, 26, 4.5], [90, 18, 3.6], [180, 18, 3.6], [270, 18, 3.6], [45, 10, 2.4], [135, 10, 2.4], [225, 10, 2.4], [315, 10, 2.4]] as const) {
+  const [h1, h2] = point(ang, L, w);
+  roseLines += line(h1) + 'Z' + line(h2) + 'Z';
+  roseFill += line(h2) + 'Z';      // shaded half of each point
+}
+
+// the price tag: hangs from the right eave on a string, left blank
+const HOOK: P = [ER[0] - 5, ER[1] + RT - 0.5];
+const TAG: P = [HOOK[0] + 1, 236];     // the eyelet: the tag hangs plumb, turned a little on its string
+const string = smooth([HOOK, [HOOK[0] + 0.6, (HOOK[1] + TAG[1]) / 2], [TAG[0], TAG[1] + 1.5]], 0.5);
+const tagPoly: P[] = [[TAG[0] - 3, TAG[1] - 3], [TAG[0] + 3, TAG[1] - 3], [TAG[0] + 11, TAG[1] + 5], [TAG[0] + 10.5, TAG[1] + 38], [TAG[0] - 10, TAG[1] + 38.5], [TAG[0] - 11, TAG[1] + 5.5]];
+const tagD = line(tagPoly) + 'Z';
+const f1 = (n: number) => n.toFixed(1);
+---
+<Frame uid={uid} title={title} desc={desc} numeral="II" taxon="Pretium domus" keyText="red · the target, left blank">
+  <!-- soil -->
+  <path class="k w08 faint" d={soil} stroke-linecap="round" />
+  <path class="k w04 mid" d={int(pebH)} />
+  <path class="k w05 mid" d={pebD} />
+
+  <!-- footing (concrete, stippled) -->
+  <path class="bg" d={footD} />
+  <path class="k w08 mid" d={footDots} stroke-linecap="round" />
+  <path class="k w08" d={footD} />
+
+  <!-- roof and chimney -->
+  <path class="bg" d={line(chimPoly) + 'Z'} />
+  <path class="k w04" d={int(chimHatch)} />
+  <path class="k w08" d={line(chimPoly) + 'Z'} />
+  <path class="k w10" d={`M${CH[0] - 2} ${CH[1]}H${CH[2] + 2}`} />
+  <path class="k w04" d={roofHatch} />
+  <path class="k w10" d={roofD} />
+  <path class="k w05" d={tiles} />
+  <path class="k w04 faint" d={int(attic)} />
+  <path class="k w05 mid" d={truss} />
+
+  <!-- cut walls and floors -->
+  <path class="k w04" d={wallHatch} />
+  <path class="k w08" d={wallLines} />
+  <path class="k w05" d={glass} />
+
+  <!-- ground -->
+  <path class="k w13" d={groundL + groundR} />
+  <path class="k w05 mid" d={ticks} />
+  <path class="k w13" d={stakes} />
+
+  <!-- rooms -->
+  <text class="lbl-k" x="226" y="318">a.</text>
+  <text class="lbl-k" x="314" y="318">b.</text>
+  <text class="lbl-k" x="226" y="242">c.</text>
+  <path class="k mid" style="stroke-width:1" d={int(dots(impPts))} stroke-linecap="round" />
+  <text class="lbl-k" x={(IMP[0] + IMP[2]) / 2} y={(IMP[1] + IMP[3]) / 2 + 3} text-anchor="middle">k-NN</text>
+
+  <!-- dimensions -->
+  <path class="k w05" d={dims} />
+  <rect class="bg" x="282" y={DS - 6} width="36" height="12" />
+  <text class="lbl" x="300" y={DS + 3} text-anchor="middle">SIZE</text>
+  <rect class="bg" x="270" y={DL - 6} width="60" height="12" />
+  <text class="lbl" x="300" y={DL + 3} text-anchor="middle">LAND_SIZE</text>
+  <text class="lbl" x={DV - 5} y={(TOP + 22 + F0) / 2} text-anchor="middle" transform={`rotate(-90 ${DV - 5} ${(TOP + 22 + F0) / 2})`}>NB_ROOMS</text>
+
+  <!-- energy ladder -->
+  {bars.map((b) => (
+    <g>
+      {b.h && <path class="k w04" d={b.h} />}
+      <path class="k w05" d={b.d} />
+      <text class="lbl" x={LAD.x + 3} y={b.y + 8.2}>{b.ch}</text>
+    </g>
+  ))}
+
+  <!-- compass rose: exposition -->
+  <circle class="k w05" cx={CR[0]} cy={CR[1]} r="21" />
+  <circle class="k w04 mid" cx={CR[0]} cy={CR[1]} r="23.5" />
+  <path class="bg" d={roseLines} />
+  <path class="fk" d={roseFill} />
+  <path class="k w05" d={roseLines} />
+  <text class="lbl-k" x={CR[0]} y={CR[1] - 30} text-anchor="middle">N</text>
+  <text class="lbl" x={CR[0]} y={CR[1] + 38} text-anchor="middle">ORIENTATION</text>
+
+  <!-- the price: unmeasured -->
+  <path class="a w05" d={string} />
+  <circle class="fa" cx={f1(HOOK[0])} cy={f1(HOOK[1])} r="1.2" />
+  <path class="bg" d={tagD} />
+  <path class="a w08" d={tagD} />
+  <circle class="a w05" cx={TAG[0]} cy={TAG[1] + 3} r="1.8" />
+</Frame>

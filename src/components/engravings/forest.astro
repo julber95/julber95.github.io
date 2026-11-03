@@ -1,0 +1,267 @@
+---
+/* Plate I — Fraud detection: a boosted forest of shallow decision trees.
+   Each tree is a real tree and a binary decision tree: the trunk splits at visible nodes,
+   the leaves are foliage clumps. Trees recede in sequence (1 → 4), each smaller, correcting the last. */
+import Frame from './Frame.astro';
+import { rng, line, smooth, wobble, dots, stipple, inPoly, sampleCurve, taper, int, type P, type Rng } from '../../lib/engrave';
+
+interface Props { uid: string; title: string; desc: string }
+const { uid, title, desc } = Astro.props;
+const R = rng(1001);
+
+const GROUND = 374;
+const deg = Math.PI / 180;
+
+/** Hatching that clips itself: parallel lines across `box` at `angle`, kept only where `inside` holds.
+ *  No <clipPath> needed, so shading can follow any region (crescents, gradients). */
+function hatchIn(box: { x: number; y: number; w: number; h: number }, angle: number, gap: number, Rg: Rng,
+  inside: (x: number, y: number) => boolean, step = 1.2, minLen = 1.5): string {
+  const a = angle * deg, ca = Math.cos(a), sa = Math.sin(a);
+  const cx = box.x + box.w / 2, cy = box.y + box.h / 2;
+  const half = Math.hypot(box.w, box.h) / 2 + gap;
+  let d = '';
+  for (let o = -half; o <= half; o += gap) {
+    const off = o + Rg.gauss() * 0.3;
+    let run: P | null = null, last: P | null = null;
+    for (let s = -half; s <= half + step; s += step) {
+      const x = cx + ca * s - sa * off, y = cy + sa * s + ca * off;
+      const ok = s <= half && inside(x, y);
+      if (ok) { if (!run) run = [x, y]; last = [x, y]; }
+      else if (run && last) {
+        if (Math.hypot(last[0] - run[0], last[1] - run[1]) >= minLen) d += `M${Math.round(run[0])} ${Math.round(run[1])}L${Math.round(last[0])} ${Math.round(last[1])}`;
+        run = null; last = null;
+      }
+    }
+  }
+  return d;
+}
+
+/** A foliage clump outline: rounded leafy lobes with small inward cusps. */
+function clump(cx: number, cy: number, r: number, lobes: number): P[] {
+  const pts: P[] = [];
+  const ph = R.next() * 6.28;
+  const n = lobes * 3;
+  for (let i = 0; i < n; i++) {
+    const t = (i / n) * Math.PI * 2;
+    const lobe = Math.abs(Math.sin((t * lobes) / 2 + ph));
+    const k = (0.86 + 0.14 * Math.sqrt(lobe)) * (1 + R.gauss() * 0.025);
+    pts.push([cx + Math.cos(t) * r * k, cy + Math.sin(t) * r * 0.84 * k]);
+  }
+  return pts;
+}
+
+/** Compact smooth closed outline: quadratic arcs between edge midpoints (half the markup of closed()). */
+function closedQ(pts: P[], dec = 0): string {
+  const k = 10 ** dec, q = (n: number) => Math.round(n * k) / k;
+  const n = pts.length, mid = (i: number): P => [(pts[i % n]![0] + pts[(i + 1) % n]![0]) / 2, (pts[i % n]![1] + pts[(i + 1) % n]![1]) / 2];
+  const m0 = mid(0);
+  let d = `M${q(m0[0])} ${q(m0[1])}`;
+  for (let i = 1; i <= n; i++) { const p = pts[i % n]!, m = mid(i); d += `Q${q(p[0])} ${q(p[1])} ${q(m[0])} ${q(m[1])}`; }
+  return d + 'Z';
+}
+
+type T = 0 | [T, T];
+let leafN = 0;   // a tree is nested pairs; 0 is a leaf
+
+interface Leaf { c: P; r: number; d: string; shade: string; deep: string; accent: boolean; id: string }
+interface Tree {
+  base: P; s: number; front: boolean; tone: string;
+  trunk: string; trunkL: string; trunkR: string; trunkShade: string; bark: string;
+  branches: string[]; nodes: P[]; leaves: Leaf[];
+}
+
+const SPREAD = [30, 25, 21, 18];
+
+function build(spec: T, base: P, s: number, front: boolean, tone: string, accentPath: number[] | null): Tree {
+  const trunkH = 96 * s;
+  const top: P = [base[0] + R.gauss() * 1.5 * s, base[1] - trunkH];
+  const wTop = 9 * s, wBase = 13 * s;
+
+  // trunk contours: slight sway, flare at the collar
+  const nT = 7;
+  const left: P[] = [], right: P[] = [];
+  for (let i = 0; i <= nT; i++) {
+    const t = i / nT;
+    const y = base[1] - trunkH * t;
+    const cx = base[0] + (top[0] - base[0]) * t + Math.sin(t * 3.1) * 1.4 * s;
+    const flare = Math.pow(1 - t, 4) * 8 * s;
+    const w = (wBase + (wTop - wBase) * t) / 2;
+    left.push([cx - w - flare + R.gauss() * 0.25, y]);
+    right.push([cx + w + flare * 0.8 + R.gauss() * 0.25, y]);
+  }
+  const trunkPoly = [...left, ...[...right].reverse()];
+  const trunk = line(trunkPoly) + 'Z';
+  const tb = { x: base[0] - 24 * s, y: base[1] - trunkH - 2, w: 48 * s, h: trunkH + 4 };
+  const frac = (x: number, y: number) => {   // 0 at left contour, 1 at right contour
+    const i = Math.max(0, Math.min(nT, Math.round(((base[1] - y) / trunkH) * nT)));
+    return (x - left[i]![0]) / (right[i]![0] - left[i]![0]);
+  };
+  let trunkShade = hatchIn(tb, -40, front ? 2.4 : 3, R, (x, y) => inPoly(trunkPoly, x, y) && frac(x, y) > 0.3);
+  if (front) trunkShade += hatchIn(tb, 40, 2.6, R, (x, y) => inPoly(trunkPoly, x, y) && frac(x, y) > 0.66);
+  let bark = '';
+  if (front) {
+    for (const f0 of [0.18, 0.42]) {
+      const pts: P[] = [];
+      for (let i = 1; i < nT; i++) pts.push([left[i]![0] + (right[i]![0] - left[i]![0]) * (f0 + R.gauss() * 0.05), left[i]![1]]);
+      bark += smooth(pts, 0.4);
+    }
+  }
+
+  const branches: string[] = ['', '', '', '', ''];
+  const nodes: P[] = [];
+  const leaves: Leaf[] = [];
+  const W = [6.4, 3.8, 2.4, 1.5, 1.0];
+
+  function seg(a: P, b: P, depth: number) {
+    const dx = b[0] - a[0], dy = b[1] - a[1];
+    const ctrl: P[] = [a, [a[0] + dx * 0.3 + R.gauss() * 1.2 * s, a[1] + dy * 0.45], [a[0] + dx * 0.75 + R.gauss() * 1 * s, a[1] + dy * 0.82], b];
+    branches[depth] += front ? taper(sampleCurve(ctrl, 4), W[depth - 1]!, W[depth]!) : smooth(ctrl, 0.5);
+  }
+
+  function grow(t: T, p: P, ang: number, len: number, depth: number, path: number[]) {
+    if (t === 0) {
+      const isA = !!accentPath && accentPath.join() === path.join();
+      const r = (isA ? 13 : 30 - depth * 2.5) * s;
+      const c: P = [p[0] + Math.cos(ang) * r * 0.35, p[1] + Math.sin(ang) * r * 0.45];
+      const poly = clump(c[0], c[1], r, isA ? 7 : 8 + Math.floor(R.next() * 3));
+      const box = { x: c[0] - r * 1.1, y: c[1] - r, w: r * 2.2, h: r * 2 };
+      // light from the upper left: hatch the lower-right of every clump, cross-hatch its deepest edge
+      // shadow beyond a curved terminator: distance from a point toward the light
+      const u = (x: number, y: number) => Math.hypot((x - c[0] + r * 0.42) / r, (y - c[1] + r * 0.5) / (r * 0.84)) - 1.02;
+      const inC = (x: number, y: number) => inPoly(poly, x, y);
+      const shade = hatchIn(box, -40, front ? 2.5 : 3, R, (x, y) => inC(x, y) && u(x, y) > -0.3 + R.gauss() * 0.03);
+      const deep = front ? hatchIn(box, 40, 2.6, R, (x, y) => inC(x, y) && u(x, y) > 0.12) : '';
+      leaves.push({ c, r, d: closedQ(poly, isA ? 1 : 0), shade, deep, accent: isA, id: `${uid}-c${leafN++}` });
+      // one or two smaller lobes behind, so each leaf reads as a mass of foliage
+      if (!isA) {
+        const nb = front ? 2 : s > 0.6 ? 1 : 0;
+        for (let k = 0; k < nb; k++) {
+          const a = ang + (k === 0 ? -1 : 1) * R.range(45, 80) * deg * (nb === 1 ? (R.next() < 0.5 ? -1 : 1) : 1);
+          const rb = r * R.range(0.55, 0.68);
+          const cb: P = [c[0] + Math.cos(a) * r * 0.72, c[1] + Math.sin(a) * r * 0.62 - r * 0.1];
+          const pb = clump(cb[0], cb[1], rb, 6);
+          const bb = { x: cb[0] - rb * 1.1, y: cb[1] - rb, w: rb * 2.2, h: rb * 2 };
+          // lobes behind lie in the crown's shadow: hatched throughout
+          const sh = hatchIn(bb, -40, front ? 2.6 : 3, R, (x, y) => inPoly(pb, x, y));
+          leaves.push({ c: [cb[0], cb[1] - 40], r: rb, d: closedQ(pb), shade: sh, deep: '', accent: false, id: `${uid}-c${leafN++}` });
+        }
+      }
+      return;
+    }
+    nodes.push(p);
+    for (const side of [0, 1] as const) {
+      const sgn = side === 0 ? -1 : 1;
+      const a = ang + sgn * (SPREAD[depth]! + R.gauss() * 2.5) * deg;
+      const l = len * (0.94 + R.gauss() * 0.05);
+      const q: P = [p[0] + Math.cos(a) * l, p[1] + Math.sin(a) * l];
+      seg(p, q, depth + 1);
+      grow(t[side], q, a * 0.75 + -90 * deg * 0.25, len * 0.76, depth + 1, [...path, side]);
+    }
+  }
+  grow(spec, top, -90 * deg, 62 * s, 0, []);
+  // higher clumps first, lower ones overlap them; the marked leaf always on top
+  leaves.sort((a, b) => (a.accent ? 1e4 : a.c[1]) - (b.accent ? 1e4 : b.c[1]));
+  return { base, s, front, tone, trunk, trunkL: smooth(left, 0.4), trunkR: smooth(right, 0.4), trunkShade, bark, branches, nodes, leaves };
+}
+
+// the boosting sequence: tree 1 in front, then each successive tree smaller and further back
+const trees: Tree[] = [
+  build([[[0, 0], 0], [[0, 0], [0, [0, 0]]]], [196, GROUND + 1], 1.18, true, '', [1, 1, 1, 1]),
+  build([[0, [0, 0]], [[0, 0], 0]], [418, 351], 0.66, false, 'mid', null),
+  build([[0, 0], [0, [0, 0]]], [500, 337], 0.5, false, 'faint', null),
+  build([[0, 0], [0, 0]], [556, 328], 0.38, false, 'faint', null),
+];
+const order = [3, 2, 1, 0].map((i) => trees[i]!);
+const front = trees[0]!;
+const accentLeaf = front.leaves.find((l) => l.accent)!;
+const ac = accentLeaf.c;
+const split = front.nodes[0]!;
+
+// ── ground ──────────────────────────────────────
+const groundD = wobble([18, GROUND], [582, GROUND], R, 0.5, 30);
+const farPts: P[] = [[262, GROUND - 1], [310, 366], [398, 354], [470, 342], [530, 333], [583, 327]];
+const farY = (x: number) => { for (let i = 0; i < farPts.length - 1; i++) { const [x0, y0] = farPts[i]!, [x1, y1] = farPts[i + 1]!; if (x <= x1) return y0 + ((x - x0) / (x1 - x0)) * (y1 - y0); } return 327; };
+const farD = smooth(farPts.map(([x, y], i) => [x, y + (i ? R.gauss() * 0.5 : 0)] as P), 0.5);
+let ticks = '';
+for (let x = 24; x < 580; x += 5 + R.next() * 13) {
+  if (Math.abs(x - 196) < 24) continue;
+  const h = 2 + R.next() * 3.5, lean = R.gauss() * 1.1;
+  ticks += `M${x.toFixed(1)} ${GROUND}l${lean.toFixed(1)} ${(-h).toFixed(1)}`;
+}
+const soil = int(dots(stipple(200, { x: 18, y: GROUND + 2, w: 564, h: 40 }, R, () => true, (_x, y) => 0.95 - ((y - GROUND) / 42) * 0.85)));
+const meadow = int(dots(stipple(90, { x: 240, y: 326, w: 342, h: 48 }, R, (x, y) => y > farY(x) + 3 && y < GROUND - 3, (x, y) => 0.25 + 0.75 * ((y - farY(x)) / (GROUND - farY(x))))));
+// cast shadows at the tree feet, toward the lower right
+const shadows = trees.map((t) =>
+  hatchIn({ x: t.base[0] - 4, y: t.base[1] - 4, w: 70 * t.s, h: 8 }, -8, t.front ? 1.6 : 2, R,
+    (x, y) => ((x - t.base[0] - 26 * t.s) / (30 * t.s)) ** 2 + ((y - t.base[1] - 0.5) / (2.6 * t.s + 0.6)) ** 2 < 1)).join('');
+
+// sequence numerals under the trees, with small arrows between
+const seqX = trees.map((t) => Math.round(t.base[0]));
+const SEQ_Y = 404;
+let arrows = '';
+for (let i = 0; i < 3; i++) {
+  const a = seqX[i]! + 12, b = seqX[i + 1]! - 12;
+  arrows += `M${a} ${SEQ_Y - 3}L${b} ${SEQ_Y - 3}M${b - 4} ${SEQ_Y - 5.5}L${b} ${SEQ_Y - 3}L${b - 4} ${SEQ_Y - 0.5}`;
+}
+const f1 = (n: number) => n.toFixed(1);
+---
+<Frame uid={uid} title={title} desc={desc} numeral="I" taxon="Silva gradientis" keyText="red · the 1.4%">
+  <defs>{trees.flatMap((t) => t.leaves.map((l) => <path id={l.id} d={l.d} />))}</defs>
+  <!-- ground -->
+  <path class="k w08 faint" d={soil} stroke-linecap="round" />
+  <path class="k w08 faint" d={meadow} stroke-linecap="round" />
+  <path class="k w05 faint" d={farD} />
+  <path class="k w04 mid" d={shadows} />
+
+  {order.map((t) => (
+    <g>
+      <!-- trunk -->
+      <path class="bg" d={t.trunk} />
+      <path class={`k w04 ${t.tone}`} d={t.trunkShade} />
+      {t.front && <path class="k w04 mid" d={int(t.bark)} />}
+      <path class={`k ${t.front ? 'w10' : 'w05'} ${t.tone}`} d={t.trunkL} />
+      <path class={`k ${t.front ? 'w13' : 'w08'} ${t.tone}`} d={t.trunkR} />
+      <!-- branches: binary splits -->
+      {t.front
+        ? <path class="fk" d={t.branches.join('')} />
+        : t.branches.map((d, i) => d && <path class={`k ${t.tone}`} style={`stroke-width:${[0, 1.4, 1.05, 0.8, 0.6][i]}`} d={d} />)}
+      <!-- foliage: one clump per leaf -->
+      {t.leaves.map((l) => l.accent ? (
+        <g>
+          <use class="bg" href={`#${l.id}`} />
+          <path class="a w04" d={l.shade} />
+          <use class="a w08" href={`#${l.id}`} />
+        </g>
+      ) : (
+        <g>
+          <use class="bg" href={`#${l.id}`} />
+          <path class={`k w04 ${t.tone}`} d={l.shade + l.deep} />
+          <use class={`k ${t.front ? 'w08' : 'w05'} ${t.tone}`} href={`#${l.id}`} />
+        </g>
+      ))}
+      <!-- split nodes -->
+      {t.nodes.map((n) => (
+        <g>
+          <circle class="bg" cx={f1(n[0])} cy={f1(n[1])} r={t.front ? 3.2 : 2} />
+          <circle class={`k ${t.front ? 'w08' : 'w05'} ${t.tone}`} cx={f1(n[0])} cy={f1(n[1])} r={t.front ? 3.2 : 2} />
+        </g>
+      ))}
+    </g>
+  ))}
+
+  <path class="k w10" d={groundD} />
+  <path class="k w05 mid" d={ticks} />
+
+  <!-- the rare fraudulent basket -->
+  <circle class="fa" cx={f1(ac[0])} cy={f1(ac[1])} r="1.8" />
+  <path class="a w05" d={`M${f1(ac[0] + accentLeaf.r * 0.8)} ${f1(ac[1] - accentLeaf.r * 0.6)}L${f1(ac[0] + accentLeaf.r + 30)} ${f1(ac[1] - accentLeaf.r - 18)}`} />
+  <text class="lbl-a" x={f1(ac[0] + accentLeaf.r + 33)} y={f1(ac[1] - accentLeaf.r - 16)}>fraud · 1.4%</text>
+
+  <!-- callout: a split -->
+  <path class="k w04" d={`M${f1(split[0] - 5)} ${f1(split[1] + 2)}L${f1(split[0] - 66)} ${f1(split[1] + 30)}`} />
+  <text class="lbl-k" x={f1(split[0] - 70)} y={f1(split[1] + 38)} text-anchor="end">split</text>
+
+  <!-- the boosting sequence -->
+  {seqX.map((x, i) => <text class="lbl" x={x} y={SEQ_Y} text-anchor="middle">{i + 1}</text>)}
+  <path class="k w05 faint" d={arrows} />
+</Frame>

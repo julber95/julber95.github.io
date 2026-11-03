@@ -1,0 +1,73 @@
+/* ───────────────────────────────────────────────
+   Atlas tokens. Paper (light) and darkroom (dark).
+   ─────────────────────────────────────────────── */
+:root {
+  --bg: #F3EEE3;
+  --surface: #EAE3D4;
+  --ink: #1A1814;
+  --ink-soft: #5B554B;
+  --rule: #CFC6B4;
+  --accent: #B8432F;
+  --grain-opacity: 0.085;
+  --grain-blend: multiply;
+  --field-ink: 26 24 20;      /* rgb triplet for canvas */
+  --field-accent: 184 67 47;
+  color-scheme: light;
+
+  /* type */
+  --f-display: 'Fraunces Variable', 'Fraunces Fallback', Georgia, serif;
+  --f-body: 'Hanken Grotesk Variable', 'Hanken Fallback', system-ui, sans-serif;
+  --f-mono: 'IBM Plex Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
+
+  --t-mono: 0.75rem;                                   /* 12px labels */
+  --t-small: clamp(0.875rem, 0.84rem + 0.15vw, 0.95rem);
+  --t-body: clamp(1.0625rem, 1.01rem + 0.25vw, 1.1875rem);
+  --t-lead: clamp(1.25rem, 1.1rem + 0.6vw, 1.6rem);
+  --t-h3: clamp(1.35rem, 1.2rem + 0.6vw, 1.75rem);
+  --t-h2: clamp(1.9rem, 1.5rem + 1.8vw, 3.1rem);
+  --t-h1: clamp(2.7rem, 1.8rem + 4.2vw, 6.25rem);
+  --t-giant: clamp(3.1rem, 1.6rem + 6.6vw, 8.6rem);
+
+  /* space */
+  --gutter: clamp(1rem, 0.5rem + 2.4vw, 3rem);
+  --s-1: 0.25rem; --s-2: 0.5rem; --s-3: 0.75rem; --s-4: 1rem;
+  --s-5: 1.5rem; --s-6: 2rem; --s-7: 3rem; --s-8: 4.5rem; --s-9: 7rem; --s-10: 10rem;
+  --measure: 64ch;
+
+  /* motion */
+  --ease: cubic-bezier(0.2, 0.7, 0.1, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.25, 1);
+  --dur-1: 180ms; --dur-2: 420ms; --dur-3: 900ms;
+
+  --hair: 1px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --bg: #0E1116;
+    --surface: #161A21;
+    --ink: #E9E3D6;
+    --ink-soft: #9A9384;
+    --rule: #2A2F38;
+    --accent: #D2573F;
+    --grain-opacity: 0.06;
+    --grain-blend: screen;
+    --field-ink: 233 227 214;
+    --field-accent: 210 87 63;
+    color-scheme: dark;
+  }
+}
+
+:root[data-theme='dark'] {
+  --bg: #0E1116;
+  --surface: #161A21;
+  --ink: #E9E3D6;
+  --ink-soft: #9A9384;
+  --rule: #2A2F38;
+  --accent: #D2573F;
+  --grain-opacity: 0.06;
+  --grain-blend: screen;
+  --field-ink: 233 227 214;
+  --field-accent: 210 87 63;
+  color-scheme: dark;
+}

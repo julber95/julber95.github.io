@@ -1,0 +1,20 @@
+---
+/** An engraving (see docs/ENGRAVING-STYLE.md). By default it is lazy: the page carries an empty,
+ *  correctly-sized frame and the SVG (a cached static file) is injected when it nears the viewport.
+ *  Pass `inline` to embed the markup in the HTML instead. */
+const modules = import.meta.glob<{ default: any }>('./engravings/*.astro', { eager: true });
+interface Props { name: string; title: string; desc: string; class?: string; inline?: boolean; decorative?: boolean }
+const { name, title, desc, class: cls, inline = false, decorative = false } = Astro.props;
+const entry = Object.entries(modules).find(([k]) => k.endsWith(`/${name}.astro`));
+const Cmp = entry?.[1].default;
+const src = `/engravings/${name}.svg`;
+---
+{inline && Cmp ? (
+  <div class:list={['engraving', cls]}><Cmp title={title} desc={desc} uid={`e-${name}`} /></div>
+) : Cmp ? (
+  <div class:list={['engraving', 'engraving--lazy', cls]} aria-hidden={decorative ? 'true' : undefined} role={decorative ? undefined : 'img'} aria-label={decorative ? undefined : title} data-eng-src={src}>
+    <noscript><img src={src} alt="" width="600" height="450" /></noscript>
+  </div>
+) : (
+  <div class:list={['engraving', 'engraving--lazy', cls]} aria-hidden={decorative ? 'true' : undefined} role={decorative ? undefined : 'img'} aria-label={decorative ? undefined : title}></div>
+)}

@@ -1,0 +1,151 @@
+---
+/* Plate III: discriminator rejection sampling. A specimen tray of generated digits,
+   each stippled through a 28×28 lattice; rejected samples are struck through in red. */
+import Frame from './Frame.astro';
+import { rng, wobble, hatch, sampleCurve, int, type P } from '../../lib/engrave';
+
+interface Props { uid: string; title: string; desc: string }
+const { uid, title, desc } = Astro.props;
+const R = rng(3003);
+
+// ── digit skeletons, in 28×28 lattice units ──────────────
+const ring = (cx: number, cy: number, rx: number, ry: number, n = 12): P[] =>
+  Array.from({ length: n + 1 }, (_, i) => {
+    const t = (i / n) * Math.PI * 2 - Math.PI / 2;
+    return [cx + Math.cos(t) * rx, cy + Math.sin(t) * ry] as P;
+  });
+const SKEL: P[][][] = [
+  [ring(14, 14, 5.6, 8.6)],
+  [[[12.5, 8], [15.5, 5], [14.8, 14], [14, 23.5]]],
+  [[[8.5, 9], [11, 5.8], [15.5, 5], [19, 7.8], [18.5, 12], [14, 17], [9, 22.5]], [[9, 22.5], [14, 22.3], [20.5, 22.8]]],
+  [[[8.5, 7.2], [13, 5], [18, 6.5], [18.3, 10.5], [13.5, 13.5]], [[13.5, 13.5], [18.8, 16], [19, 20.5], [14, 23.5], [8.2, 21.5]]],
+  [[[12.5, 5], [10, 11], [8, 16.2]], [[8, 16.2], [14, 16], [20.5, 15.6]], [[17.5, 8], [16.8, 16], [16.3, 24]]],
+  [[[19.5, 5.3], [11.5, 5.5]], [[11.5, 5.5], [10.2, 13.2]], [[10.2, 13.2], [15, 11.8], [19, 14.8], [19, 20], [15, 23.5], [8.8, 22]]],
+  [[[17.5, 4.8], [12.5, 8.8], [9.3, 15], [9.6, 20.5], [13, 23.6], [17, 22.2], [18.5, 18], [16, 14.6], [12, 15], [9.6, 18]]],
+  [[[8, 6.2], [20, 6]], [[20, 6], [15.6, 14.5], [12.4, 24]]],
+  [[[14, 13.5], [18, 10.4], [17.6, 6.2], [13.6, 4.8], [10, 6.5], [10.5, 10.5], [14, 13.5], [18.6, 17.6], [17.4, 22.6], [13, 23.8], [9, 21.5], [9.6, 17], [14, 13.5]]],
+  [[[18, 9], [15, 5.5], [11, 6], [9.5, 10], [12, 13], [16, 12], [18, 9]], [[18, 9], [17.5, 15.5], [15.6, 24]]],
+];
+
+// ── the tray ─────────────────────────────────────────────
+const COLS = 6, CELL = 60, GX = 20, PITCH_Y = 86;
+const X0 = 70, Y0 = 56;
+const PX = CELL / 30;              // one lattice pixel (28 + a pixel of margin each side)
+const DIGITS = [7, 2, 1, 0, 4, 8, 3, 9, 5, 6, 0, 1, 9, 8, 2, 7, 4, 5, 3, 6, 1, 0, 9, 2];
+// rejected samples and how they fail
+const REJECT: Record<number, 'blur' | 'warp' | 'faint' | 'broken'> = { 4: 'blur', 9: 'warp', 15: 'faint', 19: 'broken' };
+const SCORES = ['.94', '.88', '.97', '.91', '.12', '.83', '.79', '.90', '.86', '.21', '.95', '.98',
+  '.84', '.77', '.89', '.08', '.92', '.81', '.87', '.17', '.96', '.90', '.85', '.82'];
+
+/** Rasterise a skeleton onto the lattice, then place one jittered dot per inked pixel.
+ *  Coordinates are in half-pixels of the plate (the group is scaled by .5) so int() keeps detail. */
+function specimen(digit: number, mode?: string) {
+  const slant = R.gauss() * 0.12 + 0.06, sc = 0.95 + R.next() * 0.1;
+  const ox = R.gauss() * 0.6, oy = R.gauss() * 0.5;
+  let sigma = 0.95 + R.next() * 0.2, gain = 1.15, noise = 0;
+  if (mode === 'blur') { sigma = 1.55; gain = 0.72; noise = 0.025; }
+  if (mode === 'faint') { gain = 0.6; sigma = 1.05; noise = 0.015; }
+  if (mode === 'warp') { sigma = 1.25; noise = 0.03; }
+  const pts: P[] = [];
+  for (const stroke of SKEL[digit]!) {
+    let ctrl = stroke.map(([x, y]) => [14 + (x - 14) * sc - (y - 14) * slant + ox, 14 + (y - 14) * sc + oy] as P);
+    if (mode === 'warp') ctrl = ctrl.map(([x, y]) => [x + Math.sin(y * 0.5) * 2.6 + R.gauss() * 1.4, y + R.gauss() * 1.2] as P);
+    const s = ctrl.length > 2 ? sampleCurve(ctrl, 8) : ctrl;
+    for (let i = 0; i < s.length - 1; i++) {
+      const a = s[i]!, b = s[i + 1]!, n = Math.ceil(Math.hypot(b[0] - a[0], b[1] - a[1]) / 0.3);
+      for (let k = 0; k < n; k++) {
+        if (mode === 'broken' && (i + k * 0.05) % 14 > 8) continue;      // gaps in the stroke
+        pts.push([a[0] + (b[0] - a[0]) * (k / n), a[1] + (b[1] - a[1]) * (k / n)]);
+      }
+    }
+  }
+  let big = '', small = '';
+  let lb: P | null = null, ls: P | null = null;
+  const put = (x: number, y: number, isBig: boolean) => {
+    const q: P = [Math.round(x), Math.round(y)];
+    const last = isBig ? lb : ls;
+    const s = last ? `m${q[0] - last[0]} ${q[1] - last[1]}h0` : `M${q[0]} ${q[1]}h0`;
+    if (isBig) { big += s; lb = q; } else { small += s; ls = q; }
+  };
+  for (let j = 0; j < 28; j++) {
+    for (let i = 0; i < 28; i++) {
+      const cx = i + 0.5, cy = j + 0.5;
+      let d2 = Infinity;
+      for (const p of pts) { const dd = (p[0] - cx) ** 2 + (p[1] - cy) ** 2; if (dd < d2) d2 = dd; }
+      const base = Math.min(1, Math.exp(-d2 / (2 * sigma * sigma)) * gain), v = base + (R.next() < noise ? 0.6 : 0);
+      if (R.next() > v * 1.1) continue;
+      // lattice position (+1 pixel margin), loosely snapped: in half-plate-pixels
+      const x = (cx + 1) * PX * 2 + R.gauss() * 0.28 * PX;
+      const y = (cy + 1) * PX * 2 + R.gauss() * 0.28 * PX;
+      put(x, y, base > 0.5 && mode !== 'faint' && mode !== 'blur');
+    }
+  }
+  return { big, small };
+}
+
+const cells = DIGITS.map((dg, i) => {
+  const c = i % COLS, r = Math.floor(i / COLS);
+  const x = X0 + c * (CELL + GX), y = Y0 + r * PITCH_Y;
+  const mode = REJECT[i];
+  const sp = specimen(dg, mode);
+  // hairline cell, hand-cut
+  const box = [
+    wobble([x, y], [x + CELL, y], R, 0.15, 3), wobble([x + CELL, y], [x + CELL, y + CELL], R, 0.15, 3),
+    wobble([x + CELL, y + CELL], [x, y + CELL], R, 0.15, 3), wobble([x, y + CELL], [x, y], R, 0.15, 3),
+  ].join('');
+  // the one red stroke: lower left to upper right, a touch past the digit
+  const strike = mode ? wobble([x + 8 + R.gauss() * 1.5, y + CELL - 7], [x + CELL - 8, y + 8 + R.gauss() * 1.5], R, 0.35, 3) : '';
+  return { x, y, sp, box, strike, score: SCORES[i]!, rejected: !!mode };
+});
+const boxes = cells.map((c) => c.box).join('');
+const strikes = cells.map((c) => c.strike).join('');
+
+// tray: a rim with its inner edge shaded on the right and below (light from the upper left)
+const T = { x0: 46, y0: 40, x1: 554, y1: 404 }, RIM = 7;
+const trayOuter = [
+  wobble([T.x0, T.y0], [T.x1, T.y0], R, 0.25), wobble([T.x1, T.y0], [T.x1, T.y1], R, 0.25),
+  wobble([T.x1, T.y1], [T.x0, T.y1], R, 0.25), wobble([T.x0, T.y1], [T.x0, T.y0], R, 0.25),
+].join('');
+const I = { x0: T.x0 + RIM, y0: T.y0 + RIM, x1: T.x1 - RIM, y1: T.y1 - RIM };
+const trayInner = [
+  wobble([I.x0, I.y0], [I.x1, I.y0], R, 0.3), wobble([I.x1, I.y0], [I.x1, I.y1], R, 0.3),
+  wobble([I.x1, I.y1], [I.x0, I.y1], R, 0.3), wobble([I.x0, I.y1], [I.x0, I.y0], R, 0.3),
+].join('');
+const rimShade = `M${I.x1} ${I.y0}L${I.x1} ${I.y1}L${I.x0} ${I.y1}L${I.x0 + 4} ${I.y1 - 4}L${I.x1 - 4} ${I.y1 - 4}L${I.x1 - 4} ${I.y0 + 4}Z`;
+const rimHatch = int(hatch({ x: I.x0, y: I.y0, w: I.x1 - I.x0, h: I.y1 - I.y0 }, -40, 1.8, R, 0.2));
+const corners = [[T.x0, T.y0, I.x0, I.y0], [T.x1, T.y0, I.x1, I.y0], [T.x1, T.y1, I.x1, I.y1], [T.x0, T.y1, I.x0, I.y1]]
+  .map(([a, b, c, d]) => `M${a} ${b}L${c} ${d}`).join('');
+---
+<Frame uid={uid} title={title} desc={desc} numeral="III" taxon="Generator selectus" keyText="red · rejected by the discriminator">
+  <defs>
+    <clipPath id={`${uid}-rim`}><path d={rimShade} /></clipPath>
+  </defs>
+
+  <!-- tray -->
+  <path class="k w10" d={trayOuter} />
+  <path class="k w05" d={trayInner} />
+  <path class="k w04 mid" d={corners} />
+  <path class="k w04" d={rimHatch} clip-path={`url(#${uid}-rim)`} />
+
+  <!-- cells -->
+  <path class="k w04 mid" d={int(boxes)} />
+
+  <!-- specimens, stippled through the lattice -->
+  {cells.map((c) => (
+    <g transform={`translate(${c.x} ${c.y}) scale(.5)`}>
+      {c.sp.small && <path class={c.rejected ? 'k faint' : 'k mid'} style="stroke-width:2" d={c.sp.small} />}
+      {c.sp.big && <path class="k" style="stroke-width:3.1" d={c.sp.big} />}
+    </g>
+  ))}
+
+  <!-- the discriminator's verdict -->
+  <path class="a" style="stroke-width:1.2" d={strikes} />
+  {cells.map((c) => <text class="lbl" x={c.x + CELL / 2} y={c.y + CELL + 11} text-anchor="middle">D {c.score}</text>)}
+
+  <!-- legend -->
+  <path class="k" style="stroke-width:1.4" d={`M${X0 + 2} 27h0m3 0h0m3 0h0`} />
+  <text class="lbl" x={X0 + 14} y="30">accepted</text>
+  <path class="a" style="stroke-width:1.1" d={`M${X0 + 82} 31l9 -7`} />
+  <text class="lbl" x={X0 + 96} y="30">rejected</text>
+  <text class="lbl" x={X0 + 6 * CELL + 5 * GX} y="30" text-anchor="end">28 × 28 lattice</text>
+</Frame>

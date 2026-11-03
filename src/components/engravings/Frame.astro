@@ -1,0 +1,16 @@
+---
+/** Plate frame shared by every engraving: double neat-line, foot line with plate number and key.
+ *  Draw the subject inside the inner frame (x 14–586, y 14–420). */
+interface Props { uid: string; title: string; desc: string; numeral: string; taxon: string; keyText?: string }
+const { uid, title, desc, numeral, taxon, keyText } = Astro.props;
+---
+<svg viewBox="0 0 600 450" role="img" aria-labelledby={`${uid}-t ${uid}-d`} xmlns="http://www.w3.org/2000/svg">
+  <title id={`${uid}-t`}>{title}</title>
+  <desc id={`${uid}-d`}>{desc}</desc>
+  <rect class="k w08" x="2" y="2" width="596" height="446" />
+  <rect class="k w04" x="8" y="8" width="584" height="418" />
+  <slot />
+  <text class="lbl" x="10" y="441">Pl. {numeral}</text>
+  <text class="lbl-i" x={22 + numeral.length * 6.2 + 12} y="441.5" style="font-size:10.5px">{taxon}</text>
+  {keyText && <text class="lbl" x="590" y="441" text-anchor="end">{keyText}</text>}
+</svg>

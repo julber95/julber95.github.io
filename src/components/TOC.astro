@@ -1,0 +1,119 @@
+---
+import { nav } from '../data/site';
+const norm = (h: string) => h.replace(/\/$/, '') || '/';
+const path = norm(Astro.url.pathname);
+const isCurrent = (href: string) => { const h = norm(href); return h === '/' ? path === '/' : path === h || path.startsWith(h + '/'); };
+---
+<header class="masthead" data-masthead>
+  <a class="masthead__mark" href="/">
+    <span class="masthead__name">J. Bernardi</span>{' '}
+    <span class="masthead__sub label">Atlas of Learned Things</span>
+  </a>
+
+  <nav class="toc" aria-label="Contents">
+    <ol role="list" class="toc__list">
+      {nav.map((item) => (
+        <li>
+          <a href={item.href} aria-current={isCurrent(item.href) ? 'page' : undefined}>
+            <span class="toc__n">{item.n}</span>
+            <span class="toc__t">{item.label}</span>
+          </a>
+        </li>
+      ))}
+    </ol>
+  </nav>
+
+  <div class="masthead__tools">
+    <button class="theme-toggle label" type="button" data-theme-toggle aria-pressed="false">
+      <span class="theme-toggle__dot" aria-hidden="true"></span>
+      <span>Darkroom</span>
+    </button>
+    <button class="toc-open label" type="button" aria-expanded="false" aria-controls="toc-overlay" data-toc-open>Contents</button>
+  </div>
+</header>
+
+<div class="toc-overlay" id="toc-overlay" data-toc-overlay role="dialog" aria-modal="true" aria-label="Table of contents" hidden>
+  <div class="toc-overlay__head">
+    <span class="label">Table of Contents</span>
+    <button class="label" type="button" data-toc-close>Close</button>
+  </div>
+  <nav aria-label="Contents (full)">
+    <ol role="list" class="toc-overlay__list">
+      {nav.map((item, i) => (
+        <li style={`--i:${i}`}>
+          <a href={item.href} aria-current={isCurrent(item.href) ? 'page' : undefined}>
+            <span class="toc-overlay__n mono">{item.n}</span>
+            <span class="toc-overlay__t">{item.label}</span>
+            <span class="toc-overlay__leader" aria-hidden="true"></span>
+            <span class="toc-overlay__p mono">p.&thinsp;{String(i * 12 + 1).padStart(3, '0')}</span>
+          </a>
+        </li>
+      ))}
+    </ol>
+  </nav>
+  <p class="toc-overlay__foot"><button class="label" type="button" data-errata-open data-toc-errata>Errata &amp; directions for use</button></p>
+</div>
+
+<script>
+  const root = document.documentElement;
+  const toggle = document.querySelector<HTMLButtonElement>('[data-theme-toggle]');
+  const current = () =>
+    (root.dataset.theme as 'light' | 'dark' | undefined) ??
+    (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+  const paint = () => {
+    const t = current();
+    toggle?.setAttribute('aria-pressed', String(t === 'dark'));
+    document.querySelectorAll<HTMLMetaElement>('meta[name="theme-color"]').forEach((m) => (m.content = t === 'dark' ? '#0E1116' : '#F3EEE3'));
+  };
+  const flip = () => {
+    const next = current() === 'dark' ? 'light' : 'dark';
+    root.dataset.theme = next;
+    try { localStorage.setItem('atlas-theme', next); } catch {}
+    paint();
+    window.dispatchEvent(new CustomEvent('atlas:theme'));
+  };
+  toggle?.addEventListener('click', flip);
+  window.addEventListener('atlas:toggle-theme', flip);
+  matchMedia('(prefers-color-scheme: dark)').addEventListener('change', paint);
+  paint();
+
+  // masthead hairline once scrolled
+  const mh = document.querySelector<HTMLElement>('[data-masthead]');
+  const onScroll = () => mh?.classList.toggle('is-scrolled', scrollY > 8);
+  addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+
+  // mobile overlay
+  const overlay = document.querySelector<HTMLElement>('[data-toc-overlay]');
+  const openBtn = document.querySelector<HTMLButtonElement>('[data-toc-open]');
+  const closeBtn = document.querySelector<HTMLButtonElement>('[data-toc-close]');
+  const open = () => {
+    if (!overlay) return;
+    overlay.hidden = false;
+    document.querySelectorAll<HTMLElement>('main, footer, .masthead').forEach((el) => (el.inert = true));
+    requestAnimationFrame(() => overlay.classList.add('is-open'));
+    openBtn?.setAttribute('aria-expanded', 'true');
+    document.body.style.overflow = 'hidden';
+    overlay.querySelector<HTMLElement>('a')?.focus();
+  };
+  const close = () => {
+    if (!overlay || overlay.hidden) return;
+    overlay.classList.remove('is-open');
+    openBtn?.setAttribute('aria-expanded', 'false');
+    document.body.style.overflow = '';
+    document.querySelectorAll<HTMLElement>('main, footer, .masthead').forEach((el) => (el.inert = false));
+    setTimeout(() => (overlay.hidden = true), 300);
+    openBtn?.focus();
+  };
+  openBtn?.addEventListener('click', open);
+  closeBtn?.addEventListener('click', close);
+  document.querySelector('[data-toc-errata]')?.addEventListener('click', close);
+  addEventListener('keydown', (e) => { if (e.key === 'Escape') close(); });
+  overlay?.addEventListener('keydown', (e) => {
+    if (e.key !== 'Tab') return;
+    const f = [...overlay.querySelectorAll<HTMLElement>('a, button')];
+    const first = f[0], last = f[f.length - 1];
+    if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last?.focus(); }
+    else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first?.focus(); }
+  });
+</script>

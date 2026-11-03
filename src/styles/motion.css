@@ -1,0 +1,40 @@
+/* ── restrained motion ─────────────────────────── */
+/* Elements marked [data-reveal] fade up once when they enter the viewport.
+   Without JS (no .js on <html>) they are simply visible. */
+.js [data-reveal] {
+  opacity: 0;
+  transform: translateY(14px);
+  transition: opacity var(--dur-3) var(--ease), transform var(--dur-3) var(--ease);
+  transition-delay: calc(var(--i, 0) * 70ms);
+}
+.js [data-reveal].is-in { opacity: 1; transform: none; }
+
+/* hairlines that draw in */
+.js [data-draw] { transform: scaleX(0); transform-origin: left center; transition: transform 1.1s var(--ease-in-out); transition-delay: calc(var(--i, 0) * 70ms); }
+.js [data-draw].is-in { transform: scaleX(1); }
+
+/* view transitions */
+@view-transition { navigation: auto; }
+::view-transition-old(root), ::view-transition-new(root) { animation-duration: 380ms; animation-timing-function: var(--ease); }
+::view-transition-group(*) { animation-duration: 620ms; animation-timing-function: var(--ease); }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; transition-duration: 0.001ms !important; transition-delay: 0ms !important; scroll-behavior: auto !important; }
+  .js [data-reveal], .js [data-draw] { opacity: 1; transform: none; }
+  ::view-transition-group(*), ::view-transition-old(*), ::view-transition-new(*) { animation: none !important; }
+}
+
+/* Above the fold: never hidden (keeps first paint and LCP immediate).
+   Instead of fading in, page headers settle with a transform-only motion. */
+.js :is(.work__head, .log__head, .about__head, .nowp__head, .notes__head, .note__head, .plate__head) [data-reveal],
+.js :is(.about__essay, .about__margin, .nowp__body, .work__controls)[data-reveal] {
+  opacity: 1;
+  transform: none;
+  transition: none;
+  animation: settle 900ms var(--ease) both;
+  animation-delay: calc(var(--i, 0) * 60ms);
+}
+@keyframes settle { from { transform: translateY(10px); } to { transform: none; } }
+@media (prefers-reduced-motion: reduce) {
+  .js [data-reveal] { animation: none !important; }
+}

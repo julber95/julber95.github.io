@@ -1,0 +1,217 @@
+---
+/* Plate 0 — the atlas itself: an open book on a table. The left page holds the specimen field
+   (seven clusters, I–VII); the right page holds the same book, open again (two levels deep). */
+import Frame from './Frame.astro';
+import { rng, line, smooth, wobble, hatch, closed, int, type P } from '../../lib/engrave';
+
+interface Props { uid: string; title: string; desc: string }
+const { uid, title, desc } = Astro.props;
+const R = rng(1);
+const ri = (n: number) => Math.round(n);
+
+/** Compact stipple: whole px, near-duplicates dropped, relative moves. */
+function rdots(pts: P[], minGap = 1.5): string {
+  const kept: P[] = [];
+  for (const q of pts) {
+    const p: P = [ri(q[0]), ri(q[1])];
+    if (kept.some((o) => Math.abs(o[0] - p[0]) < minGap && Math.abs(o[1] - p[1]) < minGap)) continue;
+    kept.push(p);
+  }
+  kept.sort((a, b) => a[1] - b[1] || a[0] - b[0]);
+  let d = '', c: P | null = null;
+  for (const p of kept) { d += c ? `m${p[0] - c[0]} ${p[1] - c[1]}h0` : `M${p[0]} ${p[1]}h0`; c = p; }
+  return d;
+}
+
+// ── an open book: page(s, u, v), s = -1 left / +1 right, u gutter→fore-edge, v head→foot ──
+interface Book { gx: number; W: number; yT: number; H: number; dip: number }
+const page = (b: Book) => (s: number, u: number, v: number): P => {
+  const lift = b.dip * (1 - Math.max(0, u)) ** 5;          // pages sink into the gutter
+  const yTop = b.yT + lift, yBot = b.yT + b.H + lift * 0.85;
+  return [b.gx + s * b.W * u, yTop + (yBot - yTop) * v];
+};
+const edge = (pg: ReturnType<typeof page>, s: number, n = 14) => {
+  const pts: P[] = [];
+  for (let i = 0; i <= n; i++) pts.push(pg(s, i / n, 0));              // head, gutter → fore-edge
+  for (let i = 0; i <= 4; i++) pts.push(pg(s, 1, i / 4));               // fore-edge
+  for (let i = n; i >= 0; i--) pts.push(pg(s, i / n, 1));              // foot, back to gutter
+  return pts;
+};
+/** a curve across the page at fixed u (head to foot), or fixed v (gutter to fore-edge) */
+const atU = (pg: ReturnType<typeof page>, s: number, u: number, v0 = 0, v1 = 1) => smooth(Array.from({ length: 5 }, (_, i) => pg(s, u, v0 + ((v1 - v0) * i) / 4)), 0.5);
+const atV = (pg: ReturnType<typeof page>, s: number, v: number, u0 = 0, u1 = 1, n = 8) => smooth(Array.from({ length: n + 1 }, (_, i) => pg(s, u0 + ((u1 - u0) * i) / n, v)), 0.5);
+
+// main book
+const B: Book = { gx: 300, W: 214, yT: 104, H: 228, dip: 15 };
+const pg = page(B);
+const pageL = edge(pg, -1), pageR = edge(pg, 1);
+const footG = pg(1, 0, 1);              // foot of the gutter
+
+// paper edges below the pages (the text block), and the cover boards below that
+const offsetPts = (pts: P[], dx: number, dy: number, s: number) => pts.map((p) => [p[0] + s * dx * Math.abs(p[0] - B.gx) / B.W, p[1] + dy] as P);
+const blockPts = (s: number) => {
+  const foot = Array.from({ length: 15 }, (_, i) => pg(s, i / 14, 1));
+  const ext = offsetPts(foot, 3, 6, s);
+  return [...foot, ...[...ext].reverse()];
+};
+const sideBlock = (s: number) => {
+  const pts: P[] = [];
+  for (let i = 0; i <= 4; i++) pts.push(pg(s, 1, i / 4));
+  const a = pg(s, 1, 0), b = pg(s, 1, 1);
+  return [...pts, [b[0] + s * 3, b[1] + 6], [a[0] + s * 3, a[1] + 3]] as P[];
+};
+let stack = '';
+for (const s of [-1, 1]) {
+  for (let k = 1; k <= 4; k++) {
+    const f = k / 5;
+    stack += smooth(Array.from({ length: 9 }, (_, i) => { const p = pg(s, i / 8, 1); return [p[0] + s * 3 * f * (i / 8), p[1] + 6 * f] as P; }), 0.5);
+    const a = pg(s, 1, 0.02), b = pg(s, 1, 1);
+    stack += line([[a[0] + s * 3 * f, a[1] + 3 * f], [b[0] + s * 3 * f, b[1] + 6 * f]]);
+  }
+}
+const coverPts = (s: number): P[] => {
+  const foot = Array.from({ length: 15 }, (_, i) => pg(s, i / 14, 1)).map((p, i) => [p[0] + s * 8 * (i / 14), p[1] + 13 + (i / 14) * -1] as P);
+  const a = pg(s, 1, 0);
+  const head = Array.from({ length: 15 }, (_, i) => pg(s, (14 - i) / 14, 0)).map((p) => [p[0], p[1] + 3] as P);
+  return [...[...head].reverse(), ...[...foot].reverse().slice(0, 0), [a[0] + s * 8, a[1] + 4], ...[...foot].reverse()];
+};
+const cover = [...coverPts(-1), ...[...coverPts(1)].reverse()];
+const coverD = line(cover) + 'Z';
+const coverBox = { x: 70, y: 80, w: 460, h: 300 };
+const coverH = hatch(coverBox, -40, 2.1, R);
+const shadowD = line(cover.map((p) => [p[0] + 12, p[1] + 8] as P)) + 'Z';
+const shadowH = hatch({ x: 80, y: 90, w: 480, h: 300 }, -40, 3, R);
+
+// curvature of the leaves near the gutter: the left page turns away from the light, so it takes more lines
+const gutterL = [0.008, 0.02, 0.034, 0.05, 0.068, 0.09, 0.115, 0.145];
+const gutterR = [0.012, 0.03, 0.055, 0.085];
+let curl = '', curlFaint = '';
+gutterL.forEach((u, i) => { (i < 4 ? (curl += atU(pg, -1, u, 0.01, 0.99)) : (curlFaint += atU(pg, -1, u, 0.03 + i * 0.01, 0.97 - i * 0.01))); });
+gutterR.forEach((u, i) => { (i < 2 ? (curl += atU(pg, 1, u, 0.01, 0.99)) : (curlFaint += atU(pg, 1, u, 0.05, 0.95))); });
+
+// a hairline neat-line on each page, following the paper
+const neat = (b: ReturnType<typeof page>, s: number, u0: number, u1: number, v0: number, v1: number) =>
+  atV(b, s, v0, u0, u1) + atV(b, s, v1, u0, u1) + atU(b, s, u0, v0, v1) + atU(b, s, u1, v0, v1);
+const neatD = neat(pg, -1, 0.1, 0.9, 0.07, 0.93) + neat(pg, 1, 0.1, 0.9, 0.07, 0.93);
+
+// ── left page: the specimen field, seven loose clusters with numerals I–VII ──
+const centres: [number, number][] = [[0.3, 0.24], [0.62, 0.19], [0.78, 0.42], [0.5, 0.46], [0.27, 0.64], [0.58, 0.72], [0.8, 0.79]];
+const field: P[] = [];
+for (const [cu, cv] of centres) {
+  for (let i = 0; i < 54; i++) {
+    const u = cu + R.gauss() * 0.042, v = cv + R.gauss() * 0.036;
+    if (u > 0.13 && u < 0.88 && v > 0.1 && v < 0.9) field.push(pg(-1, u, v));
+  }
+}
+for (let i = 0; i < 70; i++) field.push(pg(-1, 0.14 + R.next() * 0.73, 0.1 + R.next() * 0.8));
+// roman numerals, engraved as strokes (I and V only), set beside each cluster
+const glyphs = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII'];
+let numerals = '';
+centres.forEach(([cu, cv], k) => {
+  const o = pg(-1, cu - 0.075, cv - 0.07);
+  let x = o[0];
+  const h = 4.2;
+  for (const ch of glyphs[k]!) {
+    if (ch === 'I') { numerals += `M${x.toFixed(1)} ${o[1] - h}v${h}`; x += 1.8; }
+    else { numerals += `M${(x - 0.3).toFixed(1)} ${o[1] - h}l1.5 ${h}l1.5 ${-h}`; x += 3.6; }
+  }
+});
+
+// ── right page: the same book, open again (and once more, simplified) ──
+const B1: Book = { gx: 415, W: 70, yT: 186, H: 78, dip: 5 };
+const p1 = page(B1);
+const B2: Book = { gx: B1.gx + 35, W: 22, yT: B1.yT + 24, H: 25, dip: 2 };
+const p2 = page(B2);
+const miniCover = (_b: Book, pp: ReturnType<typeof page>, k: number): P[] => {
+  const a = pp(-1, 1, 0), c = pp(-1, 1, 1), g = pp(1, 0, 1), d = pp(1, 1, 1), e = pp(1, 1, 0);
+  return [[a[0] - k, a[1]], [c[0] - k, c[1] + k * 1.2], [g[0], g[1] + k * 1.4], [d[0] + k, d[1] + k * 1.2], [e[0] + k, e[1]]];
+};
+const mc1 = miniCover(B1, p1, 3), mc2 = miniCover(B2, p2, 1.2);
+const mini1 = closed(edge(p1, -1, 8), 0.2) + closed(edge(p1, 1, 8), 0.2);
+const mini1Curl = atU(p1, -1, 0.02) + atU(p1, -1, 0.06, 0.05, 0.95) + atU(p1, 1, 0.03);
+const mini1Neat = neat(p1, -1, 0.12, 0.88, 0.09, 0.91) + neat(p1, 1, 0.12, 0.88, 0.09, 0.91);
+const mini1Field: P[] = [];
+for (const [cu, cv] of centres) for (let i = 0; i < 7; i++) mini1Field.push(p1(-1, cu + R.gauss() * 0.045, cv + R.gauss() * 0.04));
+const mini2 = closed(edge(p2, -1, 5), 0.2) + closed(edge(p2, 1, 5), 0.2) + line([p2(1, 0, 0), p2(1, 0, 1)]);
+const miniCoverH = hatch({ x: B1.gx - 80, y: B1.yT - 4, w: 160, h: B1.H + 22 }, -40, 1.8, R);
+
+// ── the ribbon: out of the gutter, over the foot of the book, onto the table ──
+const rib: P[] = [pg(1, 0.004, 0.6), pg(1, 0.004, 0.72), pg(1, 0.004, 0.86), [footG[0] + 1.5, footG[1] + 3], [footG[0] + 4, footG[1] + 12], [footG[0] + 12, footG[1] + 24], [footG[0] + 10, footG[1] + 36], [footG[0] + 16, footG[1] + 46]];
+function ribbon(c: P[], w: number) {
+  const pts = c.length > 2 ? c : c;
+  const L: P[] = [], Rt: P[] = [];
+  for (let i = 0; i < pts.length; i++) {
+    const a = pts[Math.max(0, i - 1)]!, b = pts[Math.min(pts.length - 1, i + 1)]!;
+    const dx = b[0] - a[0], dy = b[1] - a[1], l = Math.hypot(dx, dy) || 1;
+    const ww = w * (i === 0 ? 0.35 : i === 1 ? 0.8 : 1);
+    L.push([pts[i]![0] - (dy / l) * ww, pts[i]![1] + (dx / l) * ww]);
+    Rt.push([pts[i]![0] + (dy / l) * ww, pts[i]![1] - (dx / l) * ww]);
+  }
+  const end = pts[pts.length - 1]!, prev = pts[pts.length - 2]!;
+  const dx = end[0] - prev[0], dy = end[1] - prev[1], l = Math.hypot(dx, dy);
+  const notch: P = [end[0] - (dx / l) * w * 1.3, end[1] - (dy / l) * w * 1.3];   // swallow-tail
+  return smooth(L, 0.5).replace(/^M/, 'M') + `L${notch[0].toFixed(1)} ${notch[1].toFixed(1)}L${Rt[Rt.length - 1]![0].toFixed(1)} ${Rt[Rt.length - 1]![1].toFixed(1)}` +
+    smooth([...Rt].reverse(), 0.5).replace(/^M[^C]+/, '') + 'Z';
+}
+const ribD = ribbon(rib, 2.3);
+const ribH = hatch({ x: footG[0] - 10, y: footG[1] - 10, w: 40, h: 70 }, -40, 2, R);
+const miniRib = `M${ri(B1.gx + 1)} ${ri(p1(1, 0, 1)[1] - 10)}L${B1.gx + 1.5} ${p1(1, 0, 1)[1] + 4}l2 6`;
+
+// ── table: front edge, its face in shadow ──
+const TY = 398;
+const tableD = wobble([16, TY], [584, TY], R, 0.4, 26);
+const tableH = hatch({ x: 14, y: TY + 1, w: 572, h: 21 }, -40, 3, R);
+---
+<Frame uid={uid} title={title} desc={desc} numeral="0" taxon="Atlas ipsum" keyText="red · the ribbon">
+  <defs>
+    <clipPath id={`${uid}-cv`}><path d={coverD} /></clipPath>
+    <clipPath id={`${uid}-sh`}><path d={shadowD} /></clipPath>
+    <clipPath id={`${uid}-rb`}><path d={ribD} /></clipPath>
+    <clipPath id={`${uid}-tf`}><rect x="14" y={TY + 1} width="572" height={420 - TY - 1} /></clipPath>
+    <clipPath id={`${uid}-mc`}><path d={line(mc1) + 'Z'} /></clipPath>
+  </defs>
+
+  <!-- table -->
+  <path class="k w04 mid" d={int(tableH)} clip-path={`url(#${uid}-tf)`} />
+  <path class="k w10" d={tableD} />
+  <path class="k w04 faint" d={int(shadowH)} clip-path={`url(#${uid}-sh)`} />
+
+  <!-- cover boards, text block, pages -->
+  <path class="bg" d={coverD} />
+  <path class="k w04" d={int(coverH)} clip-path={`url(#${uid}-cv)`} />
+  <path class="k w10" d={coverD} />
+  {[-1, 1].map((s) => (<g><path class="bg" d={line(blockPts(s)) + 'Z'} /><path class="bg" d={line(sideBlock(s)) + 'Z'} /></g>))}
+  <path class="k w04" d={stack} />
+  <path class="bg" d={(line(pageL) + 'Z')} />
+  <path class="bg" d={(line(pageR) + 'Z')} />
+  <path class="k w04" d={curl} />
+  <path class="k w04 faint" d={curlFaint} />
+  <path class="k w04 mid" d={neatD} />
+
+  <!-- left page: the specimen field -->
+  <path class="k" style="stroke-width:1.1" d={rdots(field)} />
+  <path class="k w05" d={numerals} />
+
+  <!-- right page: the atlas again -->
+  <path class="bg" d={line(mc1) + 'Z'} />
+  <path class="k w04" d={int(miniCoverH)} clip-path={`url(#${uid}-mc)`} />
+  <path class="k w08" d={line(mc1) + 'Z'} />
+  <path class="bg" d={mini1} />
+  <path class="k w04" d={mini1Curl} />
+  <path class="k w04 faint" d={mini1Neat} />
+  <path class="k" style="stroke-width:0.7" d={rdots(mini1Field, 1)} />
+  <path class="k w05" d={line(mc2) + 'Z'} />
+  <path class="bg" d={mini2} />
+  <path class="k w04" d={mini2} />
+  <path class="a w05" d={miniRib} />
+  <path class="k w08" d={mini1 + line([p1(1, 0, 0), p1(1, 0, 1)])} />
+
+  <!-- page contours and gutter -->
+  <path class="k w10" d={(line(pageL) + 'Z') + (line(pageR) + 'Z')} />
+  <path class="k w08" d={line([pg(1, 0, 0), footG])} />
+
+  <!-- the ribbon -->
+  <path class="bg" d={ribD} />
+  <path class="a w04" d={int(ribH)} clip-path={`url(#${uid}-rb)`} />
+  <path class="a w08" d={ribD} />
+</Frame>

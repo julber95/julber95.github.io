@@ -1,0 +1,124 @@
+---
+import '../styles/tokens.css';
+import '../styles/base.css';
+import '../styles/type.css';
+import '../styles/grid.css';
+import '../styles/motion.css';
+import '../styles/chrome.css';
+import '../styles/engraving.css';
+import '../styles/plate.css';
+import '../styles/print.css';
+
+import frauncesNormal from '@fontsource-variable/fraunces/files/fraunces-latin-opsz-normal.woff2?url';
+import frauncesItalic from '@fontsource-variable/fraunces/files/fraunces-latin-opsz-italic.woff2?url';
+import hankenNormal from '@fontsource-variable/hanken-grotesk/files/hanken-grotesk-latin-wght-normal.woff2?url';
+import hankenItalic from '@fontsource-variable/hanken-grotesk/files/hanken-grotesk-latin-wght-italic.woff2?url';
+import plex400 from '@fontsource/ibm-plex-mono/files/ibm-plex-mono-latin-400-normal.woff2?url';
+import plex500 from '@fontsource/ibm-plex-mono/files/ibm-plex-mono-latin-500-normal.woff2?url';
+
+import TOC from '../components/TOC.astro';
+import Colophon from '../components/Colophon.astro';
+import Errata from '../components/Errata.astro';
+import { site } from '../data/site';
+import { getNotes } from '../lib/notes';
+const hasNotes = (await getNotes()).some((n) => !n.data.draft);
+
+interface Props {
+  title?: string;
+  description?: string;
+  ogImage?: string;
+  type?: 'website' | 'article';
+  noindex?: boolean;
+  /** emit JSON-LD Person (index and about only) */
+  person?: boolean;
+}
+const { title, description: rawDescription = site.description, ogImage = '/og/index.png', type = 'website', noindex = false, person = false } = Astro.props;
+const fullTitle = title ? `${title} — ${site.name}` : `${site.name} — ${site.title}`;
+// meta descriptions: keep to ~155 characters, cut at a word boundary
+const description = rawDescription.length <= 158 ? rawDescription : rawDescription.slice(0, 155).replace(/[\s,;:.—–-]+\S*$/, '') + '…';
+const path = Astro.url.pathname.endsWith('/') ? Astro.url.pathname : Astro.url.pathname + '/';
+const canonical = new URL(path, site.url).href;
+const ogUrl = new URL(ogImage, site.url).href;
+
+const fontFaces = `
+@font-face{font-family:'Fraunces Variable';font-style:normal;font-display:swap;font-weight:100 900;src:url(${frauncesNormal}) format('woff2-variations');unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+@font-face{font-family:'Fraunces Variable';font-style:italic;font-display:swap;font-weight:100 900;src:url(${frauncesItalic}) format('woff2-variations');unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+@font-face{font-family:'Hanken Grotesk Variable';font-style:normal;font-display:swap;font-weight:100 900;src:url(${hankenNormal}) format('woff2-variations')}
+@font-face{font-family:'Hanken Grotesk Variable';font-style:italic;font-display:swap;font-weight:100 900;src:url(${hankenItalic}) format('woff2-variations')}
+@font-face{font-family:'IBM Plex Mono';font-style:normal;font-display:swap;font-weight:400;src:url(${plex400}) format('woff2')}
+@font-face{font-family:'IBM Plex Mono';font-style:normal;font-display:swap;font-weight:500;src:url(${plex500}) format('woff2')}
+@font-face{font-family:'Fraunces Fallback';src:local('Georgia'),local('Times New Roman');size-adjust:104%;ascent-override:94%;descent-override:24%;line-gap-override:0%}
+@font-face{font-family:'Hanken Fallback';src:local('Arial'),local('Helvetica');size-adjust:98%;ascent-override:100%;descent-override:26%;line-gap-override:0%}
+`;
+
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'Person',
+  name: site.name,
+  url: site.url,
+  email: `mailto:${site.email}`,
+  jobTitle: 'AI/ML student',
+  homeLocation: { '@type': 'Place', name: 'Paris region, France' },
+  alumniOf: [
+    { '@type': 'CollegeOrUniversity', name: 'Université Paris-Dauphine — PSL' },
+  ],
+  affiliation: { '@type': 'CollegeOrUniversity', name: 'Université PSL' },
+  knowsAbout: ['Machine learning', 'Deep learning', 'Generative models', 'Natural language processing', 'Explainability'],
+  sameAs: [site.github, site.linkedin],
+};
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{fullTitle}</title>
+    <meta name="description" content={description} />
+    {!noindex && <link rel="canonical" href={canonical} />}
+    {noindex && <meta name="robots" content="noindex" />}
+    <meta name="author" content={site.name} />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#F3EEE3" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#0E1116" media="(prefers-color-scheme: dark)" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    {hasNotes && <link rel="alternate" type="application/rss+xml" title={`${site.name}: Notes`} href="/rss.xml" />}
+    <link rel="sitemap" href="/sitemap-index.xml" />
+
+    <meta property="og:type" content={type} />
+    <meta property="og:site_name" content={`${site.name} — ${site.title}`} />
+    <meta property="og:title" content={fullTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={ogUrl} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta name="twitter:card" content="summary_large_image" />
+
+    <link rel="preload" href={frauncesNormal} as="font" type="font/woff2" crossorigin />
+    <style is:inline set:html={fontFaces}></style>
+
+    <script is:inline>
+      (function () {
+        var d = document.documentElement;
+        d.classList.add('js');
+        try { var t = localStorage.getItem('atlas-theme'); if (t === 'light' || t === 'dark') d.dataset.theme = t; } catch (e) {}
+      })();
+    </script>
+    {person && <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />}
+    <slot name="head" />
+  </head>
+  <body>
+    <a class="skip" href="#main">Skip to contents</a>
+    <TOC />
+    <main id="main" tabindex="-1">
+      <slot />
+    </main>
+    <Colophon />
+    <Errata />
+    <script>
+      import '../scripts/reveal';
+      import '../scripts/keys';
+      import '../scripts/engravings';
+    </script>
+  </body>
+</html>
