@@ -5,6 +5,13 @@ import Kicker from '../components/Kicker.astro';
 import { getPlates, hrefOf } from '../lib/plates';
 import { site } from '../data/site';
 import { existsSync } from 'node:fs';
+import { getCollection } from 'astro:content';
+
+// "Now": the study and the job that are current today, straight from the Field Log
+const today = new Date();
+const current = (await getCollection('log'))
+  .filter((e) => e.data.start <= today && (!e.data.end || e.data.end >= today))
+  .sort((a, b) => (a.data.kind === 'education' ? -1 : 1) - (b.data.kind === 'education' ? -1 : 1));
 
 // drop a square photo at public/portrait.jpeg (or .jpg) and it replaces the initials
 const portrait = ['portrait.jpeg', 'portrait.jpg'].find((f) => existsSync(new URL(`../../public/${f}`, import.meta.url)));
@@ -41,6 +48,29 @@ const key = latest.data.results.find((r) => r.best);
     <div class="home__figure" data-reveal style="--i:2">
       <LandscapeFigure />
     </div>
+
+    {current.length > 0 && (
+      <section class="home__nowsec" aria-labelledby="now-title" data-reveal style="--i:4">
+        <div class="home__nowsec-head">
+          <h2 id="now-title" class="label"><span class="accent">Now</span></h2>
+        </div>
+        <div class="home__nowsec-cards">
+          {current.map((e) => (
+            <article class="nowcard">
+              <p class="label">{e.data.kind === 'education' ? 'Studying' : 'Working'} · {e.data.when}</p>
+              <h3>{e.data.title}</h3>
+              <p class="nowcard__org">{e.data.org}</p>
+              {e.data.courses && <p class="nowcard__more mono">{e.data.courses.slice(0, 4).join(' · ')}</p>}
+              {!e.data.courses && <p class="nowcard__more mono">{e.data.place}</p>}
+            </article>
+          ))}
+        </div>
+        <div class="home__latest-links mono">
+          <a class="arrow-link" href="/now/"><span>What I'm doing now</span><span>→</span></a>
+          <a class="arrow-link soft" href="/path/"><span>Full path</span><span>→</span></a>
+        </div>
+      </section>
+    )}
 
     <section class="home__latest" aria-labelledby="latest-title" data-reveal style="--i:4">
       <div class="home__latest-head">
@@ -88,6 +118,13 @@ const key = latest.data.results.find((r) => r.best);
   .home__now { display: flex; flex-wrap: wrap; gap: .3rem 1.2rem; padding-top: var(--s-4); border-top: var(--hair) solid var(--rule); max-width: 34rem; }
   .home__figure { grid-column: 8 / -1; justify-self: end; width: min(100%, calc(100svh - 21rem)); min-width: 300px; }
 
+  .home__nowsec { grid-column: 1 / -1; display: grid; grid-template-columns: subgrid; row-gap: var(--s-4); padding-top: var(--s-4); border-top: var(--hair) solid var(--ink); align-items: start; }
+  .home__nowsec-head { grid-column: 1 / span 3; }
+  .home__nowsec-cards { grid-column: 4 / span 6; display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-4); }
+  .nowcard { display: grid; gap: .45rem; align-content: start; padding: var(--s-5); background: var(--surface); border: var(--hair) solid var(--rule); border-radius: var(--radius); }
+  .nowcard h3 { font-size: 1.15rem; font-weight: 500; line-height: 1.2; letter-spacing: -.015em; }
+  .nowcard__org { font-size: var(--t-small); color: var(--ink-soft); }
+  .nowcard__more { font-size: .72rem; color: var(--ink-soft); }
   .home__latest {
     grid-column: 1 / -1; display: grid; grid-template-columns: subgrid; row-gap: var(--s-4);
     padding-top: var(--s-4); border-top: var(--hair) solid var(--ink); align-items: start;
@@ -109,12 +146,16 @@ const key = latest.data.results.find((r) => r.best);
     .home__figure { grid-column: 8 / -1; justify-self: end; width: min(100%, calc(100svh - 21rem)); min-width: 300px; }
     .home__latest-head { grid-column: 1 / -1; display: flex; gap: 1rem; flex-wrap: wrap; }
     .home__latest-body { grid-column: 1 / span 9; }
+    .home__nowsec-head { grid-column: 1 / -1; }
+    .home__nowsec-cards { grid-column: 1 / span 9; }
   }
   @media (max-width: 860px) {
     .home { padding-top: 5.5rem; }
     .home__intro, .home__figure, .home__latest-body, .home__latest-links { grid-column: 1 / -1; }
     .home__figure { order: 3; width: 100%; min-width: 0; justify-self: stretch; }
     .home__latest { order: 2; display: grid; grid-template-columns: 1fr; }
+    .home__nowsec { order: 2; grid-template-columns: 1fr; }
+    .home__nowsec-cards { grid-column: 1 / -1; grid-template-columns: 1fr; }
     .home__latest-links { justify-items: start; display: flex; gap: 1.5rem; }
   }
 </style>
