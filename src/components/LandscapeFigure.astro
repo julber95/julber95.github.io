@@ -1,0 +1,78 @@
+---
+import { basins as allBasins, ballStart } from '../data/landscape';
+import { getPlates } from '../lib/plates';
+import { hasPublishedNotes } from '../lib/notes';
+import { capitalise, numberWord } from '../lib/words';
+
+const n = (await getPlates()).length;
+const showNotes = await hasPublishedNotes();
+const basins = allBasins
+  .filter((b) => b.key !== 'notes' || showNotes)
+  .map((b) => ({ ...b, caption: b.caption.replace('{n}', capitalise(numberWord(n))) }));
+---
+<figure class="lf" data-landscape={JSON.stringify({ basins, ball: ballStart })}>
+  <div class="lf__frame">
+    <div class="lf__plate">
+      <canvas aria-hidden="true"></canvas>
+      <ul class="lf__labels" role="list" aria-label="Sections of the site">
+        {basins.map((b) => (
+          <li>
+            <a class="lf__label" href={b.href} data-basin={b.key}
+               style={`left:${(b.at[0] * 100).toFixed(1)}%;top:${((b.at[1] + b.width * (b.labelDy ?? 1.35)) * 100).toFixed(1)}%`}>
+              {b.label}<span class="sr-only">: {b.caption}</span>
+            </a>
+          </li>
+        ))}
+      </ul>
+      <button class="lf__ball" type="button" data-ball aria-label="Let the ball roll into the nearest section"
+              style={`left:${ballStart[0] * 100}%;top:${ballStart[1] * 100}%`}></button>
+      <span class="lf__hint mono" data-hint aria-hidden="true"
+            style={`left:${ballStart[0] * 100}%;top:${ballStart[1] * 100}%`}>← drag me</span>
+    </div>
+  </div>
+  <figcaption class="lf__cap mono" data-caption><span class="ink">Fig. 1.</span> The site as a loss landscape. <span class="lf__js">Drag the ball into a basin, or pick a label.</span><span class="lf__nojs">Pick a section.</span></figcaption>
+</figure>
+
+<script>
+  import { mountLandscape } from '../scripts/landscape3d';
+  const root = document.querySelector<HTMLElement>('[data-landscape]');
+  if (root) {
+    const go = () => mountLandscape(root);
+    'requestIdleCallback' in window ? requestIdleCallback(go, { timeout: 200 }) : setTimeout(go, 50);
+  }
+</script>
+
+<style>
+  .lf { display: grid; gap: var(--s-3); margin: 0; }
+  .lf__frame { border: var(--hair) solid var(--ink); padding: 8px; }
+  .lf__plate { position: relative; aspect-ratio: 1; border: var(--hair) solid var(--rule); overflow: hidden; }
+  canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; cursor: grab; }
+  canvas:active { cursor: grabbing; }
+  /* 3D: the ball and its trail live on an overlay canvas */
+  .lf__plate :global(.lf__over) { position: absolute; inset: 0; width: 100%; height: 100%; display: block; pointer-events: none; }
+  .lf__labels { position: absolute; inset: 0; margin: 0; pointer-events: none; }
+  .lf__label {
+    position: absolute; transform: translateX(-50%); pointer-events: auto;
+    display: inline-flex; align-items: center; min-height: 26px; padding: 0 .45em;
+    font: 500 .68rem/1 var(--f-mono); letter-spacing: .1em; text-transform: uppercase; white-space: nowrap;
+    color: var(--ink); background: var(--bg); text-decoration: none;
+    transition: color var(--dur-1) var(--ease);
+  }
+  .lf__label:hover, .lf__label.is-active { color: var(--accent); }
+  .lf__ball {
+    position: absolute; width: 36px; height: 36px; margin: -18px 0 0 -18px; border-radius: 50%;
+    background: transparent; touch-action: none; cursor: grab;
+  }
+  .lf__ball:focus-visible { outline-offset: -4px; }
+  .lf__hint {
+    position: absolute; margin: -0.6em 0 0 16px; font-size: .66rem; color: var(--ink-soft); pointer-events: none;
+    transition: opacity 400ms var(--ease);
+  }
+  .lf__hint:global(.is-gone) { opacity: 0; }
+  .lf__cap { font-size: .72rem; color: var(--ink-soft); min-height: 2.6em; }
+  .lf__cap :global(.ink) { color: var(--ink); }
+  .lf__cap :global(em) { font-family: var(--f-body); font-style: italic; font-size: 1.1em; color: var(--ink); letter-spacing: 0; }
+  /* without JS the ball and hint are meaningless */
+  :global(html:not(.js)) .lf__ball, :global(html:not(.js)) .lf__hint, :global(html:not(.js)) .lf__js { display: none; }
+  :global(html.js) .lf__nojs { display: none; }
+</style>

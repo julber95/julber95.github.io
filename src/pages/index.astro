@@ -1,58 +1,98 @@
 ---
 import Base from '../layouts/Base.astro';
-import SpecimenField from '../components/SpecimenField.astro';
-import FeaturedPlate from '../components/FeaturedPlate.astro';
-import { getPlates } from '../lib/plates';
+import LandscapeFigure from '../components/LandscapeFigure.astro';
+import Kicker from '../components/Kicker.astro';
+import { getPlates, hrefOf } from '../lib/plates';
 import { site } from '../data/site';
 
-const plates = await getPlates();
-const featuredOrder = ['VII', 'VI', 'III'];
-const featured = featuredOrder.map((n) => plates.find((p) => p.data.numeral === n)!).filter(Boolean);
+// the latest project is the most recent plate
+const latest = (await getPlates()).at(-1)!;
+const key = latest.data.results.find((r) => r.best);
 ---
 <Base person>
-  <SpecimenField />
+  <div class="page home">
+    <section class="home__intro" aria-labelledby="home-title">
+      <p class="label" data-reveal>An atlas of models taken apart</p>
+      <h1 id="home-title" class="home__name" data-reveal style="--i:1">Julien<br />Bernardi</h1>
+      <p class="home__lead" data-reveal style="--i:2">
+        AI/ML student at Université PSL. I take models apart to see{' '}
+        <em>what they actually learned.</em>
+      </p>
+      <p class="home__now label" data-reveal style="--i:3">
+        <span class="label--ink">Currently</span>
+        <span>{site.status.map((s) => `${s.label} @ ${s.at}`).join(' · ')} · Paris region</span>
+      </p>
+    </section>
 
-  <section class="intro page section" aria-labelledby="intro-title">
-    <p class="label intro__label" data-reveal>Preface</p>
-    <h2 id="intro-title" class="sr-only">Preface</h2>
-    <div class="intro__text">
-      <p class="lead" data-reveal style="--i:1">
-        I study artificial intelligence at Université PSL and work as an AI engineer in a research division.
-        This atlas collects the models I have built, broken and measured, one plate per specimen, each with
-        its method, its real results, and a drawing.
-      </p>
-      <p class="intro__aside" data-reveal style="--i:2">
-        Generative models, language, medical imaging and plain tabular learning, catalogued in the order I met them.
-        Read it as a lab notebook that got a little out of hand.
-      </p>
+    <div class="home__figure" data-reveal style="--i:2">
+      <LandscapeFigure />
     </div>
-    <aside class="intro__margin mono soft" data-reveal style="--i:3">
-      <span class="label">Currently</span>
-      <span>{site.status.map((s) => `${s.label} @ ${s.at}`).join(' · ')}</span>
-      <span class="intro__coords">{site.coords}</span>
-    </aside>
-  </section>
 
-  <section class="selected page section" aria-labelledby="selected-title">
-    <header class="section-head">
-      <span class="label" data-reveal>Plates</span>
-      <h2 id="selected-title" data-reveal style="--i:1">Selected <em>plates</em></h2>
-      <a class="aside arrow-link" href="/work/" data-reveal style="--i:2"><span>Full catalogue, I–VII</span><span>→</span></a>
-    </header>
-    {featured.map((p, i) => <FeaturedPlate plate={p} index={i} />)}
-  </section>
+    <section class="home__latest" aria-labelledby="latest-title" data-reveal style="--i:4">
+      <div class="home__latest-head">
+        <p class="label"><span class="accent">Latest project</span></p>
+        <Kicker plate={latest} prefix={false} />
+      </div>
+      <div class="home__latest-body">
+        <h2 id="latest-title"><a href={hrefOf(latest)}>{latest.data.title}</a></h2>
+        <p>{latest.data.summary}</p>
+        {key && <p class="home__key mono"><span>{key.label}</span><strong>{key.value}</strong></p>}
+      </div>
+      <div class="home__latest-links mono">
+        <a class="arrow-link" href={hrefOf(latest)}><span>Read the project</span><span>→</span></a>
+        <a class="arrow-link soft" href="/work/"><span>All work</span><span>→</span></a>
+      </div>
+    </section>
+  </div>
 </Base>
 
 <style>
-  .intro { padding-top: var(--s-9); row-gap: var(--s-5); }
-  .intro__label { grid-column: 1 / span 1; padding-top: .55rem; }
-  .intro__text { grid-column: 2 / span 7; display: grid; gap: var(--s-5); }
-  .intro__text .lead { font-size: clamp(1.45rem, 1.1rem + 1.3vw, 2.25rem); line-height: 1.24; letter-spacing: -0.012em; font-weight: 340; }
-  .intro__aside { color: var(--ink-soft); max-width: 52ch; }
-  .intro__margin { grid-column: 10 / -1; display: grid; gap: .45rem; align-content: start; padding-top: .55rem; border-top: var(--hair) solid var(--rule); font-size: .75rem; line-height: 1.5; }
-  .intro__coords { color: var(--ink-soft); }
+  .home {
+    max-width: 1180px;
+    padding-top: clamp(5.5rem, 10vh, 7.5rem);
+    padding-bottom: var(--s-6);
+    row-gap: var(--s-6);
+    align-items: center;
+  }
+  .home__intro { grid-column: 1 / span 6; display: grid; gap: var(--s-5); align-content: center; }
+  .home__name {
+    font-size: clamp(3.2rem, 1rem + 4.6vw, 6.2rem);
+    font-weight: 500;
+    letter-spacing: -0.04em;
+    line-height: 0.95;
+  }
+  .home__lead { font-family: var(--f-body); font-size: clamp(1.3rem, 1.05rem + 0.8vw, 1.75rem); font-weight: 300; line-height: 1.32; max-width: 30ch; }
+  .home__lead em { color: var(--accent); }
+  .home__now { display: flex; flex-wrap: wrap; gap: .3rem 1.2rem; padding-top: var(--s-4); border-top: var(--hair) solid var(--rule); max-width: 34rem; }
+  .home__figure { grid-column: 8 / -1; justify-self: end; width: min(100%, calc(100svh - 21rem)); min-width: 300px; }
+
+  .home__latest {
+    grid-column: 1 / -1; display: grid; grid-template-columns: subgrid; row-gap: var(--s-4);
+    padding-top: var(--s-4); border-top: var(--hair) solid var(--ink); align-items: start;
+  }
+  .home__latest-head { grid-column: 1 / span 3; display: grid; gap: .5rem; }
+  .home__latest-body { grid-column: 4 / span 6; display: grid; gap: .6rem; }
+  .home__latest-body h2 { font-size: var(--t-h3); font-weight: 420; line-height: 1.15; }
+  .home__latest-body h2 a { text-decoration: none; }
+  .home__latest-body h2 a:hover { color: var(--accent); }
+  .home__latest-body p { color: var(--ink-soft); max-width: 62ch; font-size: var(--t-small); }
+  .home__latest-body .home__key { font-size: .72rem; color: var(--ink-soft); }
+  .home__key { display: flex; flex-wrap: wrap; column-gap: .4rem; }
+  .home__key strong { color: var(--accent); font-weight: 500; white-space: nowrap; }
+  .home__latest-links { grid-column: 10 / -1; display: grid; gap: .9rem; justify-items: end; padding-top: .3rem; }
+  .home__latest-links .soft { color: var(--ink-soft); }
+
+  @media (max-width: 1100px) {
+    .home__intro { grid-column: 1 / span 7; }
+    .home__figure { grid-column: 8 / -1; justify-self: end; width: min(100%, calc(100svh - 21rem)); min-width: 300px; }
+    .home__latest-head { grid-column: 1 / -1; display: flex; gap: 1rem; flex-wrap: wrap; }
+    .home__latest-body { grid-column: 1 / span 9; }
+  }
   @media (max-width: 860px) {
-    .intro__label, .intro__text, .intro__margin { grid-column: 1 / -1; }
-    .intro__margin { margin-top: var(--s-5); }
+    .home { padding-top: 5.5rem; }
+    .home__intro, .home__figure, .home__latest-body, .home__latest-links { grid-column: 1 / -1; }
+    .home__figure { order: 3; width: 100%; min-width: 0; justify-self: stretch; }
+    .home__latest { order: 2; display: grid; grid-template-columns: 1fr; }
+    .home__latest-links { justify-items: start; display: flex; gap: 1.5rem; }
   }
 </style>
