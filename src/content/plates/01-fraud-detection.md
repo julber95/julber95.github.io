@@ -1,11 +1,8 @@
 ---
-numeral: I
 order: 1
 title: Fraud detection in consumer-credit baskets
-short: Fraud detection
-taxon: Silva gradientis
-family: Boosted ensembles
-habitat: BNP Paribas Personal Finance (ENS Challenge Data no. 104)
+label: Fraud detection
+summary: Gradient boosting on 116k purchase baskets with 1.4% fraud. First place on both leaderboards of the BNP Paribas challenge.
 observed: 2024
 period: Jun 2024
 domain: Tabular
@@ -14,12 +11,11 @@ stack: [Python, scikit-learn, pandas, NumPy, Jupyter]
 abstract: >-
   A purchase basket arrives; is it fraud? On 115,988 transactions with 1.4% positives,
   we flattened 24 item slots into basket-level features and compared four classifiers on
-  precision–recall AUC. A gradient-boosted ensemble tuned with randomized search finished
+  precision–recall AUC. A gradient-boosted ensemble tuned with randomised search finished
   first on both the public and the private leaderboard.
-featured: false
 engraving: forest
 figCaption: A forest of shallow trees, each correcting the last; the one leaf that flags the rare fraudulent basket is inked in red.
-figAlt: Engraving of a small forest of decision trees drawn in hatched ink, receding in depth, each split marked with a node; one leaf on the frontmost tree is marked in vermilion.
+figAlt: Engraving of a small forest of decision trees drawn in hatched ink, receding in depth; one leaf on the frontmost tree is marked in blue.
 links:
   - { label: Repository, href: 'https://github.com/julber95/fraud-detection-ML' }
   - { label: Challenge page, href: 'https://challengedata.ens.fr/participants/challenges/104/' }
@@ -34,26 +30,18 @@ results:
 
 ## Problem
 
-BNP Paribas Personal Finance finances purchases through partner retailers, and wants to
-flag fraudulent baskets *before* the credit is approved. Each observation is a basket of up to
-24 items, described by category, price, manufacturer, model and quantity: 147 columns in all.
-Only 1,319 of the 92,790 training baskets (1.42%) are fraudulent, so accuracy is meaningless.
-The metric is the area under the precision–recall curve.
-
-<aside class="note">PR-AUC is computed as average precision, Σ (Rₙ − Rₙ₋₁) Pₙ, which is what scikit-learn's <code>average_precision_score</code> implements. Under a 1.4% base rate, a random classifier scores about 0.014.</aside>
+BNP Paribas Personal Finance wants to flag fraudulent baskets *before* a credit is approved (ENS Challenge
+Data no. 104). Each basket holds up to 24 items described across 147 columns, and only 1.42% of the 92,790
+training baskets are fraudulent, so the metric is precision–recall AUC.
 
 ## Method
 
-- Flattened the 24 item slots into basket-level aggregates (item count, total price, category indicators), merged duplicated categorical variables and dropped product codes that carried no signal.
-- One-hot encoded categories rather than label encoding, so no false ordering was introduced.
-- Stratified 80/20 split, keeping the fraud rate identical in both halves.
-- Compared a decision tree, logistic regression, a random forest and gradient boosting; tuned the boosted model with `RandomizedSearchCV` under cross-validation.
+We flattened the item slots into basket-level aggregates (item count, total price, category indicators),
+one-hot encoded categories and kept the fraud rate identical across an 80/20 split. A decision tree, logistic
+regression, a random forest and gradient boosting were compared; the boosted model was tuned with a randomised
+hyperparameter search (`RandomizedSearchCV`) under cross-validation.
 
 ## Results
 
-Gradient boosting beat the other three models by a wide margin and placed **first on both
-leaderboards**. The most informative features were the basket's size and total price,
-a handful of high-risk categories (electronics, high-value items), and brand × model
-interactions such as repeated purchases of high-end phones.
-
-<aside class="note">Our held-out split: 23,198 baskets, 362 of them fraudulent.</aside>
+Gradient boosting placed **first on both leaderboards**. The most informative features were basket size and
+total price, a few high-risk categories, and brand × model interactions such as repeated high-end phones.

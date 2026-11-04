@@ -1,6 +1,5 @@
-/** Index of Instruments (About page). Each entry cites the plates where it was used:
- *  matched by name against plate `stack` arrays, or listed explicitly with `plates`. */
-export interface Skill { name: string; plates?: string[] } // plates: explicit numerals; otherwise matched by name in plate stacks
+/** Tools & methods, grouped (About page). */
+export interface Skill { name: string }
 export const skills: { group: string; items: Skill[] }[] = [
   { group: 'Languages', items: [{ name: 'Python' }, { name: 'C' }, { name: 'SQL' }, { name: 'R' }] },
   {
@@ -14,9 +13,9 @@ export const skills: { group: string; items: Skill[] }[] = [
     group: 'Architectures',
     items: [
       { name: 'Convolutional networks' }, { name: 'Encoder–decoders' },
-      { name: 'Generative adversarial networks', plates: ['III'] },
-      { name: 'Recurrent networks, LSTM', plates: ['IV'] },
-      { name: 'Transformers', plates: ['VII'] },
+      { name: 'Generative adversarial networks' },
+      { name: 'Recurrent networks, LSTM' },
+      { name: 'Transformers' },
     ],
   },
   {

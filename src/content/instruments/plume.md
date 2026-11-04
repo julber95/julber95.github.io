@@ -1,5 +1,5 @@
 ---
-letter: A
+order: 1
 title: Plume
 kind: Handwritten note-taking app (PWA)
 period: '2026'

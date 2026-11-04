@@ -7,20 +7,16 @@ const link = z.object({ label: z.string(), href: z.string() });
 const plates = defineCollection({
   loader: glob({ pattern: '**/*.{md,mdx}', base: './src/content/plates' }),
   schema: z.object({
-    numeral: z.string(),                          // 'I' … 'VII', '0'
-    order: z.number().int(),                      // chronological position
+    order: z.number().int(),                      // chronological position (0 = hidden atlas plate)
     title: z.string(),
-    short: z.string(),                            // short name for captions/hero
-    taxon: z.string(),                            // Latin-ish binomial
-    family: z.string(),
-    habitat: z.string(),
-    observed: z.number().int(),
+    label: z.string(),                            // short name, used in captions and lists
+    summary: z.string().max(155),                 // one line: lists, meta descriptions, OG images
+    observed: z.number().int(),                   // year
     period: z.string(),
     domain: z.enum(['Generative', 'NLP', 'Medical', 'Tabular', 'Meta']),
     team: z.enum(['solo', 'team of four']).optional(),
     stack: z.array(z.string()),
     abstract: z.string(),
-    featured: z.boolean().default(false),
     engraving: z.enum(['forest', 'house', 'digits', 'beamtree', 'lymph', 'aorta', 'roots', 'atlas']),
     figCaption: z.string(),
     figAlt: z.string(),
@@ -37,7 +33,7 @@ const plates = defineCollection({
 const instruments = defineCollection({
   loader: glob({ pattern: '**/*.md', base: './src/content/instruments' }),
   schema: z.object({
-    letter: z.string(),
+    order: z.number().int(),
     title: z.string(),
     kind: z.string(),
     period: z.string().optional(),
@@ -54,7 +50,7 @@ const log = defineCollection({
     title: z.string(),
     org: z.string(),
     place: z.string(),
-    coords: z.string(),
+    coords: z.string().optional(),
     start: z.coerce.date(),
     end: z.coerce.date(),
     when: z.string(),                             // human-readable span

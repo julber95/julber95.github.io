@@ -1,8 +1,8 @@
 export const site = {
   name: 'Julien Bernardi',
-  title: 'An Atlas of Learned Things',
+  title: 'An atlas of models taken apart',
   description:
-    'Julien Bernardi — AI/ML student at Université PSL. An atlas of machine-learning models taken apart: generative models, NLP, medical imaging, tabular learning.',
+    'Julien Bernardi, AI/ML student at Université PSL and AI engineer at AMIAD. Machine-learning models taken apart: generative models, NLP, medical imaging.',
   url: 'https://julber95.github.io',
   email: 'julien.bernardi-pellegrino@dauphine.eu',
   github: 'https://github.com/julber95',
@@ -17,10 +17,10 @@ export const site = {
 };
 
 export const nav = [
-  { n: '§1', href: '/', label: 'Index', key: 'i' },
-  { n: '§2', href: '/work/', label: 'Plates', key: 'w' },
-  { n: '§3', href: '/path/', label: 'Field Log', key: 'p' },
-  { n: '§4', href: '/about/', label: 'About', key: 'a' },
-  { n: '§5', href: '/now/', label: 'Now', key: 'o' },
-  { n: '§6', href: '/notes/', label: 'Notes', key: 'n' },
+  { href: '/', label: 'Index', key: 'i' },
+  { href: '/work/', label: 'Work', key: 'w' },
+  { href: '/path/', label: 'Field Log', key: 'p' },
+  { href: '/about/', label: 'About', key: 'a' },
+  { href: '/now/', label: 'Now', key: 'o' },
+  { href: '/notes/', label: 'Notes', key: 'n' },
 ] as const;

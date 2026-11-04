@@ -1,11 +1,8 @@
 ---
-numeral: VI
 order: 6
-title: Predicting aortic-wall inflammation (HISA) in abdominal aneurysms
-short: Aortic aneurysms (HISA)
-taxon: Aorta inflammata
-family: Linear probes on foundation embeddings
-habitat: HistAAA cohort, three European centres
+title: Predicting aortic-wall inflammation in abdominal aneurysms
+label: Aortic-wall inflammation (HISA)
+summary: Four feature pipelines for the HISA inflammation score on 369 patients. Charts plateau near chance; slide embeddings reach a test AUC of 0.717.
 observed: 2026
 period: Apr 2026
 domain: Medical
@@ -16,10 +13,9 @@ abstract: >-
   with abdominal aortic aneurysms), I benchmarked four feature pipelines for the HISA inflammation score,
   as a tabular complement to the original whole-slide deep-learning paper. Clinical and structural
   variables plateau near chance. Mean-pooled CTransPath embeddings of H&E slides reach a test AUC of 0.717.
-featured: true
 engraving: aorta
-figCaption: A section of aortic wall in stipple, from intima to adventitia. Inflammatory infiltrates are marked in red where the HISA score would count them.
-figAlt: Stippled engraving of a curved band of arterial wall in cross-section, with layered elastic fibres drawn as fine wavy lines, calcified patches in dense dots and a few clusters of inflammatory cells in vermilion.
+figCaption: A section of aortic wall in stipple, from intima to adventitia. Inflammatory infiltrates are marked in red.
+figAlt: Stippled engraving of a curved band of arterial wall in cross-section with layered elastic fibres, calcified patches and a few clusters of inflammatory cells in blue.
 links:
   - { label: Repository, href: 'https://github.com/julber95/aortic-aneurysm-hisa-prediction' }
   - { label: Report (PDF), href: 'https://github.com/julber95/aortic-aneurysm-hisa-prediction/blob/main/report.pdf' }
@@ -36,30 +32,19 @@ results:
 
 ## Problem
 
-HISA (Histological Inflammation Scale of Aneurysms) grades how degraded and inflamed an aneurysmal
-aortic wall is, and it is only available after surgery, from tissue. Kolbinger et al. showed that
-attention-based multiple-instance learning on whole-slide images predicts it with an AUC of
-0.77–0.79 on external validation. My question was the complementary one: **how much of that signal
-survives in simpler, tabular representations?**
+HISA grades how inflamed an aneurysmal aortic wall is, and it is only available after surgery, from tissue.
+Kolbinger et al. predict it from whole-slide images with attention-based MIL (AUC 0.77–0.79). My question:
+**how much of that signal survives in simpler, tabular representations?**
 
 ## Method
 
-Four pipelines, each with its own preprocessing and a common model zoo (logistic regression, naive
-Bayes, KNN, random forest and others), compared by 5-fold cross-validated AUC. The held-out test set
-was used once.
-
-1. **Clinical only.** Pre-operative variables: age, sex, BMI, aneurysm diameter, smoking.
-2. **Combined.** All variables, *including* the inflammation grades. Kept on purpose, as a ceiling.
-3. **Clinical + structural.** Adds calcification, fibrosis, angiogenesis and elastin degradation; feature selection with SelectKBest and RFECV.
-4. **Image embeddings.** CTransPath features of each H&E slide, mean-pooled to one 768-d vector per patient, then PCA(150).
-
-<aside class="note">Pipeline 2 is <em>conceptual leakage</em>: inflammation grades are used to predict an inflammation score. Its 0.961 shows what perfect information looks like. It isn't a result.</aside>
+Four pipelines, compared by 5-fold cross-validated AUC with a single use of the held-out test set:
+pre-operative clinical variables; clinical plus structural histology (with SelectKBest and RFECV); all variables
+including inflammation grades, kept on purpose as a leakage ceiling; and CTransPath H&E embeddings mean-pooled
+per patient, then PCA(150).
 
 ## Results
 
-Pre-operative variables carry almost no signal: AUC 0.614 and recall 0.11 on the high-HISA class.
-Structural histology adds nothing, and a **tabular ceiling of about 0.64** held across feature selection and
-tuning. Mean-pooled slide embeddings recover the signal: **test AUC 0.717** (CV 0.820). The gap to the
-paper's 0.77–0.79 is roughly what spatial attention buys when it finds the informative regions of a slide.
-
-<aside class="note">Validation is internal only, on a random 80/20 split of the pooled centres, so these AUCs are likely optimistic compared with the paper's external cohorts.</aside>
+Pre-operative and structural variables carry almost no signal; mean-pooled slide embeddings recover much of it,
+still short of the paper's attention-based model. Validation is internal only, so these AUCs are likely optimistic compared
+with the paper's external cohorts.
