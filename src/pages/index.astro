@@ -6,8 +6,8 @@ import { getPlates, hrefOf } from '../lib/plates';
 import { site } from '../data/site';
 import { existsSync } from 'node:fs';
 
-// drop a square photo at public/portrait.jpg and it replaces the initials
-const hasPortrait = existsSync(new URL('../../public/portrait.jpg', import.meta.url));
+// drop a square photo at public/portrait.jpeg (or .jpg) and it replaces the initials
+const portrait = ['portrait.jpeg', 'portrait.jpg'].find((f) => existsSync(new URL(`../../public/${f}`, import.meta.url)));
 
 // the latest project is the most recent plate
 const latest = (await getPlates()).at(-1)!;
@@ -18,8 +18,8 @@ const key = latest.data.results.find((r) => r.best);
     <section class="home__intro" aria-labelledby="home-title">
       <p class="label" data-reveal>An atlas of models taken apart</p>
       <div class="home__who" data-reveal style="--i:1">
-        {hasPortrait
-          ? <img class="home__photo" src="/portrait.jpg" alt="Portrait of Julien Bernardi" width="96" height="96" />
+        {portrait
+          ? <img class="home__photo" src={`/${portrait}`} alt="Portrait of Julien Bernardi" width="96" height="96" />
           : <span class="home__photo home__photo--empty" aria-hidden="true">JB</span>}
         <h1 id="home-title" class="home__name">Julien Bernardi</h1>
       </div>

@@ -9,11 +9,11 @@
 }
 .masthead.is-scrolled { border-bottom-color: var(--rule); }
 .masthead__mark { display: flex; align-items: center; gap: .65rem; text-decoration: none; }
-.masthead__logo { width: 30px; height: 30px; display: block; transition: transform var(--dur-2) var(--ease); }
-.masthead__logo rect { fill: var(--ink); }
-.masthead__logo path { fill: none; stroke: var(--bg); stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
-.masthead__logo circle { fill: var(--accent); }
-.masthead__mark:hover .masthead__logo { transform: rotate(-6deg); }
+.masthead__logo { width: 32px; height: 32px; display: block; overflow: visible; }
+.masthead__logo ellipse { fill: none; stroke: var(--ink); stroke-width: 1.5; }
+.masthead__logo ellipse:nth-of-type(2) { opacity: .7; } .masthead__logo ellipse:nth-of-type(3) { opacity: .5; }
+.masthead__logo circle { fill: var(--accent); transition: transform var(--dur-2) var(--ease); transform-origin: 14.4px 19.6px; }
+.masthead__mark:hover .masthead__logo circle { transform: scale(1.35); }
 .masthead__home { color: var(--ink-soft); transition: color var(--dur-1) var(--ease); }
 .masthead__mark:hover .masthead__home, .masthead__mark[aria-current='page'] .masthead__home { color: var(--ink); }
 .masthead__sub { font-size: 0.6875rem; }
