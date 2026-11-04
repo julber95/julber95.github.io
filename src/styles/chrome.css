@@ -8,8 +8,14 @@
   transition: border-color var(--dur-2) var(--ease), background-color var(--dur-2) var(--ease);
 }
 .masthead.is-scrolled { border-bottom-color: var(--rule); }
-.masthead__mark { display: flex; align-items: baseline; gap: var(--s-3); text-decoration: none; }
-.masthead__name { font-family: var(--f-display); font-size: 1.12rem; font-weight: 600; letter-spacing: -0.02em; }
+.masthead__mark { display: flex; align-items: center; gap: .65rem; text-decoration: none; }
+.masthead__logo { width: 30px; height: 30px; display: block; transition: transform var(--dur-2) var(--ease); }
+.masthead__logo rect { fill: var(--ink); }
+.masthead__logo path { fill: none; stroke: var(--bg); stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+.masthead__logo circle { fill: var(--accent); }
+.masthead__mark:hover .masthead__logo { transform: rotate(-6deg); }
+.masthead__home { color: var(--ink-soft); transition: color var(--dur-1) var(--ease); }
+.masthead__mark:hover .masthead__home, .masthead__mark[aria-current='page'] .masthead__home { color: var(--ink); }
 .masthead__sub { font-size: 0.6875rem; }
 .toc { justify-self: center; }
 .toc__list { display: flex; gap: clamp(.9rem, 1.8vw, 2.1rem); }

@@ -8,8 +8,9 @@ const path = norm(Astro.url.pathname);
 const isCurrent = (href: string) => { const h = norm(href); return h === '/' ? path === '/' : path === h || path.startsWith(h + '/'); };
 ---
 <header class="masthead" data-masthead>
-  <a class="masthead__mark" href="/">
-    <span class="masthead__name">J. Bernardi</span>{' '}
+  <a class="masthead__mark" href="/" aria-label="Home">
+    <svg class="masthead__logo" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="8" /><path d="M12 8v11.5a3.5 3.5 0 0 1-6 2.4M17 8v16h4.2a4 4 0 0 0 0-8H17h3.6a3.5 3.5 0 0 0 0-7H17" /><circle cx="26" cy="25" r="1.9" /></svg>
+    <span class="masthead__home label">Home</span>
   </a>
 
   <nav class="toc" aria-label="Contents">
