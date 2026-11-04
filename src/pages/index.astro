@@ -51,21 +51,31 @@ const key = latest.data.results.find((r) => r.best);
 
     {current.length > 0 && (
       <section class="home__nowsec" aria-labelledby="now-title" data-reveal style="--i:4">
-        <div class="home__nowsec-head">
-          <h2 id="now-title" class="label"><span class="accent">Now</span></h2>
+        <h2 id="now-title" class="label home__nowsec-k">Now</h2>
+        <div class="nowsplit">
+          {current.map((e, k) => {
+            const s0 = e.data.start.getTime(), s1 = e.data.end.getTime();
+            const p = Math.max(0, Math.min(1, (today.getTime() - s0) / (s1 - s0)));
+            return (
+              <>
+                {k > 0 && <div class="nowsplit__rule" aria-hidden="true" />}
+                <article class="nowcol" data-start={s0} data-end={s1}>
+                  <div class="nowcol__head label">
+                    <span class="nowcol__verb">{e.data.kind === 'education' ? 'Studying' : 'Working'}</span>
+                    <span>{e.data.when}</span>
+                  </div>
+                  <div class="nowcol__bar" role="progressbar" aria-label="Time elapsed" aria-valuemin="0" aria-valuemax="100" aria-valuenow={Math.round(p * 100)}>
+                    <i style={`width:${(p * 100).toFixed(1)}%`} />
+                  </div>
+                  <h3>{e.data.org.split(/ — |,/)[0].trim()}</h3>
+                  <p class="nowcol__title">{e.data.title}</p>
+                  <p class="nowcol__meta mono">{[e.data.place, ...(e.data.courses ?? []).slice(0, 4)].join(' · ')}</p>
+                </article>
+              </>
+            );
+          })}
         </div>
-        <div class="home__nowsec-cards">
-          {current.map((e) => (
-            <article class="nowcard">
-              <p class="label">{e.data.kind === 'education' ? 'Studying' : 'Working'} · {e.data.when}</p>
-              <h3>{e.data.title}</h3>
-              <p class="nowcard__org">{e.data.org}</p>
-              {e.data.courses && <p class="nowcard__more mono">{e.data.courses.slice(0, 4).join(' · ')}</p>}
-              {!e.data.courses && <p class="nowcard__more mono">{e.data.place}</p>}
-            </article>
-          ))}
-        </div>
-        <div class="home__latest-links mono">
+        <div class="home__nowsec-links mono">
           <a class="arrow-link" href="/now/"><span>What I'm doing now</span><span>→</span></a>
           <a class="arrow-link soft" href="/path/"><span>Full path</span><span>→</span></a>
         </div>
@@ -89,6 +99,17 @@ const key = latest.data.results.find((r) => r.best);
     </section>
   </div>
 </Base>
+
+<script>
+  // the bars reflect today's date, not the build date
+  const now = Date.now();
+  document.querySelectorAll<HTMLElement>('.nowcol').forEach((c) => {
+    const a = +c.dataset.start!, b = +c.dataset.end!, p = Math.max(0, Math.min(1, (now - a) / (b - a)));
+    const bar = c.querySelector<HTMLElement>('.nowcol__bar');
+    bar?.setAttribute('aria-valuenow', String(Math.round(p * 100)));
+    const i = bar?.querySelector<HTMLElement>('i'); if (i) i.style.width = `${(p * 100).toFixed(1)}%`;
+  });
+</script>
 
 <style>
   .home {
@@ -118,13 +139,19 @@ const key = latest.data.results.find((r) => r.best);
   .home__now { display: flex; flex-wrap: wrap; gap: .3rem 1.2rem; padding-top: var(--s-4); border-top: var(--hair) solid var(--rule); max-width: 34rem; }
   .home__figure { grid-column: 8 / -1; justify-self: end; width: min(100%, calc(100svh - 21rem)); min-width: 300px; }
 
-  .home__nowsec { grid-column: 1 / -1; display: grid; grid-template-columns: subgrid; row-gap: var(--s-4); padding-top: var(--s-4); border-top: var(--hair) solid var(--ink); align-items: start; }
-  .home__nowsec-head { grid-column: 1 / span 3; }
-  .home__nowsec-cards { grid-column: 4 / span 6; display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-4); }
-  .nowcard { display: grid; gap: .45rem; align-content: start; padding: var(--s-5); background: var(--surface); border: var(--hair) solid var(--rule); border-radius: var(--radius); }
-  .nowcard h3 { font-size: 1.15rem; font-weight: 500; line-height: 1.2; letter-spacing: -.015em; }
-  .nowcard__org { font-size: var(--t-small); color: var(--ink-soft); }
-  .nowcard__more { font-size: .72rem; color: var(--ink-soft); }
+  .home__nowsec { grid-column: 1 / -1; padding-top: var(--s-4); border-top: var(--hair) solid var(--ink); display: grid; gap: var(--s-5); }
+  .home__nowsec-k { color: var(--accent); }
+  .nowsplit { display: grid; grid-template-columns: 1fr 1px 1fr; gap: var(--s-7); }
+  .nowsplit__rule { background: var(--rule); }
+  .nowcol { display: grid; gap: .45rem; align-content: start; }
+  .nowcol__head { display: flex; justify-content: space-between; gap: 1rem; }
+  .nowcol__verb { color: var(--accent); }
+  .nowcol__bar { height: 4px; border-radius: 4px; background: var(--rule); overflow: hidden; margin: .15rem 0 .5rem; }
+  .nowcol__bar i { display: block; height: 100%; border-radius: 4px; background: var(--accent); }
+  .nowcol h3 { font-size: clamp(1.6rem, 1rem + 1.5vw, 2.4rem); font-weight: 500; letter-spacing: -.03em; line-height: 1.05; }
+  .nowcol__title { font-size: var(--t-body); }
+  .nowcol__meta { font-size: .72rem; color: var(--ink-soft); line-height: 1.5; }
+  .home__nowsec-links { display: flex; gap: 1.6rem; }
   .home__latest {
     grid-column: 1 / -1; display: grid; grid-template-columns: subgrid; row-gap: var(--s-4);
     padding-top: var(--s-4); border-top: var(--hair) solid var(--ink); align-items: start;
@@ -146,16 +173,15 @@ const key = latest.data.results.find((r) => r.best);
     .home__figure { grid-column: 8 / -1; justify-self: end; width: min(100%, calc(100svh - 21rem)); min-width: 300px; }
     .home__latest-head { grid-column: 1 / -1; display: flex; gap: 1rem; flex-wrap: wrap; }
     .home__latest-body { grid-column: 1 / span 9; }
-    .home__nowsec-head { grid-column: 1 / -1; }
-    .home__nowsec-cards { grid-column: 1 / span 9; }
   }
   @media (max-width: 860px) {
     .home { padding-top: 5.5rem; }
     .home__intro, .home__figure, .home__latest-body, .home__latest-links { grid-column: 1 / -1; }
     .home__figure { order: 3; width: 100%; min-width: 0; justify-self: stretch; }
     .home__latest { order: 2; display: grid; grid-template-columns: 1fr; }
-    .home__nowsec { order: 2; grid-template-columns: 1fr; }
-    .home__nowsec-cards { grid-column: 1 / -1; grid-template-columns: 1fr; }
+    .home__nowsec { order: 2; }
+    .nowsplit { grid-template-columns: 1fr; gap: var(--s-5); }
+    .nowsplit__rule { height: 1px; }
     .home__latest-links { justify-items: start; display: flex; gap: 1.5rem; }
   }
 </style>
