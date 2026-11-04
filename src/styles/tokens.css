@@ -1,22 +1,23 @@
 /* ───────────────────────────────────────────────
-   Atlas tokens. Paper (light) and darkroom (dark).
+   Cobalt tokens. Cool white (light) and deep navy (dark).
    ─────────────────────────────────────────────── */
 :root {
-  --bg: #F3EEE3;
-  --surface: #EAE3D4;
-  --ink: #1A1814;
-  --ink-soft: #5B554B;
-  --rule: #CFC6B4;
-  --accent: #B8432F;
-  --grain-opacity: 0.085;
+  --bg: #F4F7FB;
+  --surface: #FFFFFF;
+  --ink: #0E2A47;
+  --ink-soft: #52677F;
+  --rule: #D6DFEA;
+  --accent: #0A5FE0;
+  --grain-opacity: 0;
   --grain-blend: multiply;
-  --field-ink: 26 24 20;      /* rgb triplet for canvas */
-  --field-accent: 184 67 47;
+  --field-ink: 14 42 71;      /* rgb triplet for canvas */
+  --field-accent: 10 95 224;
+  --radius: 8px;
   color-scheme: light;
 
   /* type */
-  --f-display: 'Fraunces Variable', 'Fraunces Fallback', Georgia, serif;
-  --f-body: 'Hanken Grotesk Variable', 'Hanken Fallback', system-ui, sans-serif;
+  --f-display: 'Space Grotesk Variable', 'Grotesk Fallback', system-ui, sans-serif;
+  --f-body: 'IBM Plex Sans Variable', 'Plex Sans Fallback', system-ui, sans-serif;
   --f-mono: 'IBM Plex Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
 
   --t-mono: 0.75rem;                                   /* 12px labels */
@@ -44,30 +45,30 @@
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']) {
-    --bg: #0E1116;
-    --surface: #161A21;
-    --ink: #E9E3D6;
-    --ink-soft: #9A9384;
-    --rule: #2A2F38;
-    --accent: #D2573F;
-    --grain-opacity: 0.06;
+    --bg: #0A1424;
+    --surface: #101D33;
+    --ink: #E3ECF8;
+    --ink-soft: #8EA2BD;
+    --rule: #1F3050;
+    --accent: #5B9BFF;
+    --grain-opacity: 0;
     --grain-blend: screen;
-    --field-ink: 233 227 214;
-    --field-accent: 210 87 63;
+    --field-ink: 227 236 248;
+    --field-accent: 91 155 255;
     color-scheme: dark;
   }
 }
 
 :root[data-theme='dark'] {
-  --bg: #0E1116;
-  --surface: #161A21;
-  --ink: #E9E3D6;
-  --ink-soft: #9A9384;
-  --rule: #2A2F38;
-  --accent: #D2573F;
-  --grain-opacity: 0.06;
+  --bg: #0A1424;
+  --surface: #101D33;
+  --ink: #E3ECF8;
+  --ink-soft: #8EA2BD;
+  --rule: #1F3050;
+  --accent: #5B9BFF;
+  --grain-opacity: 0;
   --grain-blend: screen;
-  --field-ink: 233 227 214;
-  --field-accent: 210 87 63;
+  --field-ink: 227 236 248;
+  --field-accent: 91 155 255;
   color-scheme: dark;
 }

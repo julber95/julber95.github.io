@@ -44,7 +44,7 @@ body::before {
 a { color: inherit; text-decoration-thickness: var(--hair); text-underline-offset: 0.22em; text-decoration-color: var(--rule); transition: text-decoration-color var(--dur-1) var(--ease), color var(--dur-1) var(--ease); }
 a:hover { text-decoration-color: var(--accent); }
 
-/* atlas focus: a vermilion pencil ring with an offset, like a hand-drawn circle around a specimen */
+/* focus: an accent ring with an offset */
 :focus { outline: none; }
 :focus-visible {
   outline: 1.5px solid var(--accent);

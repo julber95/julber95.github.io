@@ -27,7 +27,8 @@
 /* Above the fold: never hidden (keeps first paint and LCP immediate).
    Instead of fading in, page headers settle with a transform-only motion. */
 .js :is(.work__head, .log__head, .about__head, .nowp__head, .notes__head, .note__head, .plate__head) [data-reveal],
-.js :is(.about__essay, .about__margin, .nowp__body, .work__controls)[data-reveal] {
+.js :is(.about__essay, .about__margin, .nowp__body, .work__controls, .home__figure, .home__latest)[data-reveal],
+.js .home__intro [data-reveal] {
   opacity: 1;
   transform: none;
   transition: none;
