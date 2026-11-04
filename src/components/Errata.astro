@@ -1,28 +1,30 @@
 ---
+import { hasPublishedNotes } from '../lib/notes';
+const notes = await hasPublishedNotes();
 ---
 <dialog class="errata" data-errata aria-labelledby="errata-title">
   <div class="errata__inner">
     <header class="errata__head">
-      <p class="label">Loose sheet, inserted after the colophon</p>
-      <h2 id="errata-title" class="errata__title">Errata <em>&amp; directions for use</em></h2>
+      <p class="label">Small print</p>
+      <h2 id="errata-title" class="errata__title">Keyboard <em>&amp; errata</em></h2>
     </header>
 
     <dl class="errata__keys">
       <div><dt><kbd>g</kbd> <kbd>i</kbd></dt><dd>Go to the index</dd></div>
-      <div><dt><kbd>g</kbd> <kbd>w</kbd></dt><dd>Go to the plates</dd></div>
+      <div><dt><kbd>g</kbd> <kbd>w</kbd></dt><dd>Go to work</dd></div>
       <div><dt><kbd>g</kbd> <kbd>p</kbd></dt><dd>Go to the field log</dd></div>
       <div><dt><kbd>g</kbd> <kbd>a</kbd></dt><dd>Go to about</dd></div>
       <div><dt><kbd>g</kbd> <kbd>o</kbd></dt><dd>Go to now</dd></div>
-      <div><dt><kbd>g</kbd> <kbd>n</kbd></dt><dd>Go to notes</dd></div>
+      {notes && <div><dt><kbd>g</kbd> <kbd>n</kbd></dt><dd>Go to notes</dd></div>}
       <div><dt><kbd>t</kbd></dt><dd>Paper / darkroom</dd></div>
-      <div><dt><kbd>[</kbd> <kbd>]</kbd></dt><dd>Previous / next plate</dd></div>
+      <div><dt><kbd>[</kbd> <kbd>]</kbd></dt><dd>Previous / next project</dd></div>
       <div><dt><kbd>?</kbd></dt><dd>This sheet</dd></div>
     </dl>
 
     <ol class="errata__list">
-      <li><span class="mono">p. 001</span> For “models he has taken apart”, read “models that took him apart, a little, each time”.</li>
-      <li><span class="mono">Pl. III</span> Some rejected digits were, on reflection, perfectly good digits.</li>
-      <li><span class="mono">passim</span> <span>The atlas lists seven plates. Its binder counted eight. <a href="/plate-0/" class="errata__secret">See the missing one&nbsp;→</a></span></li>
+      <li><span class="mono">Index</span> For “models taken apart”, read “models that took me apart, a little, each time”.</li>
+      <li><span class="mono">GANs</span> Some rejected digits were, on reflection, perfectly good digits.</li>
+      <li><span class="mono">Work</span> <span>The list shows every project but one. <a href="/plate-0/" class="errata__secret">See the missing one&nbsp;→</a></span></li>
     </ol>
 
     <label class="errata__switch mono">

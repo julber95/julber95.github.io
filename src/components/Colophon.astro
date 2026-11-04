@@ -1,6 +1,9 @@
 ---
 import { site } from '../data/site';
 import { getNotes } from '../lib/notes';
+import { getPlates } from '../lib/plates';
+import { capitalise, numberWord } from '../lib/words';
+const nProjects = capitalise(numberWord((await getPlates()).length));
 const hasNotes = (await getNotes()).some((n) => !n.data.draft);
 const year = new Date().getFullYear();
 ---
@@ -10,8 +13,8 @@ const year = new Date().getFullYear();
     <div class="colophon__col colophon__col--title">
       <p class="label" id="colophon-title">Colophon</p>
       <p class="colophon__lead">
-        Set in <em>Fraunces</em>, Hanken Grotesk and IBM Plex Mono. Engravings drawn in code,
-        one per plate. Built with Astro, with no client-side framework and not a single stock image.
+        Set in Space Grotesk, IBM Plex Sans and IBM Plex Mono. Engravings drawn in code,
+        one per project. Built with Astro, with no client-side framework and not a single stock image.
       </p>
     </div>
     <div class="colophon__col">
@@ -28,9 +31,8 @@ const year = new Date().getFullYear();
       <p class="label">Imprint</p>
       <p class="mono colophon__imprint">
         {site.place}<br />
-        {site.coords}<br />
         First edition, {site.established}{year > site.established ? `; revised ${year}` : ''}.<br />
-        Plates I–VII<a class="colophon__zero" href="/plate-0/">,&nbsp;0<span class="sr-only">: the missing plate</span></a>.
+        {nProjects} projects<a class="colophon__zero" href="/plate-0/">, and one more<span class="sr-only">: the unlisted page</span></a>.
       </p>
       <button class="colophon__errata label" type="button" data-errata-open>Errata <kbd>?</kbd></button>
     </div>

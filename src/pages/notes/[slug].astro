@@ -22,7 +22,7 @@ const plate = note.data.plate ? (await getPlates()).find((p) => p.id === note.da
     </header>
     <div class="note__body prose"><Content /></div>
     <aside class="note__margin mono">
-      {plate && <p><span class="label">Filed under</span><br /><a href={hrefOf(plate)}>Plate {plate.data.numeral}: {plate.data.short}</a></p>}
+      {plate && <p><span class="label">Filed under</span><br /><a href={hrefOf(plate)}>{plate.data.label}</a></p>}
       {note.data.tags.length > 0 && <p><span class="label">Tags</span><br />{note.data.tags.join(' · ')}</p>}
       <p><a href="/notes/">← All notes</a></p>
     </aside>

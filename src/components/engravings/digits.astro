@@ -116,7 +116,7 @@ const rimHatch = int(hatch({ x: I.x0, y: I.y0, w: I.x1 - I.x0, h: I.y1 - I.y0 },
 const corners = [[T.x0, T.y0, I.x0, I.y0], [T.x1, T.y0, I.x1, I.y0], [T.x1, T.y1, I.x1, I.y1], [T.x0, T.y1, I.x0, I.y1]]
   .map(([a, b, c, d]) => `M${a} ${b}L${c} ${d}`).join('');
 ---
-<Frame uid={uid} title={title} desc={desc} numeral="III" taxon="Generator selectus" keyText="red · rejected by the discriminator">
+<Frame uid={uid} title={title} desc={desc} numeral="III" taxon="Generator selectus" keyText="blue · rejected by the discriminator">
   <defs>
     <clipPath id={`${uid}-rim`}><path d={rimShade} /></clipPath>
   </defs>
@@ -143,9 +143,9 @@ const corners = [[T.x0, T.y0, I.x0, I.y0], [T.x1, T.y0, I.x1, I.y0], [T.x1, T.y1
   {cells.map((c) => <text class="lbl" x={c.x + CELL / 2} y={c.y + CELL + 11} text-anchor="middle">D {c.score}</text>)}
 
   <!-- legend -->
-  <path class="k" style="stroke-width:1.4" d={`M${X0 + 2} 27h0m3 0h0m3 0h0`} />
+  <path class="k leg" style="stroke-width:1.4" d={`M${X0 + 2} 27h0m3 0h0m3 0h0`} />
   <text class="lbl" x={X0 + 14} y="30">accepted</text>
-  <path class="a" style="stroke-width:1.1" d={`M${X0 + 82} 31l9 -7`} />
+  <path class="a leg" style="stroke-width:1.1" d={`M${X0 + 82} 31l9 -7`} />
   <text class="lbl" x={X0 + 96} y="30">rejected</text>
   <text class="lbl" x={X0 + 6 * CELL + 5 * GX} y="30" text-anchor="end">28 × 28 lattice</text>
 </Frame>

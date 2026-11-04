@@ -1,0 +1,119 @@
+---
+import { render } from 'astro:content';
+import Engraving from './Engraving.astro';
+import Kicker from './Kicker.astro';
+import { hrefOf, slugOf, type Plate } from '../lib/plates';
+
+interface Props { plate: Plate; prev?: Plate; next?: Plate }
+const { plate, prev, next } = Astro.props;
+const d = plate.data;
+const slug = slugOf(plate);
+const { Content } = await render(plate);
+const hasNotes = d.results.some((r) => r.note);
+---
+<article class="proj page page-top" aria-labelledby="proj-title">
+  <header class="proj__head">
+    <div class="proj__titles">
+      <div data-reveal><Kicker plate={plate} withTeam /></div>
+      <h1 id="proj-title" data-reveal style="--i:1">{d.title}</h1>
+      <p class="proj__summary" data-reveal style="--i:2">{d.summary}</p>
+      {d.links.length > 0 && (
+        <ul role="list" class="proj__links mono" data-reveal style="--i:3">
+          {d.links.map((l) => <li><a href={l.href}>{l.label}&nbsp;↗</a></li>)}
+        </ul>
+      )}
+    </div>
+    <figure class="proj__figure">
+      <div class="proj__engraving" style={`view-transition-name: plate-${slug}`}>
+        <Engraving name={d.engraving} title={d.figAlt} desc={d.figCaption} />
+      </div>
+      <figcaption class="mono">{d.figCaption}</figcaption>
+    </figure>
+  </header>
+
+  <div class="proj__body prose">
+    <Content />
+  </div>
+
+  {d.results.length > 0 && (
+    <section class="proj__results" aria-labelledby="results-h">
+      <h2 id="results-h" class="label">Measurements</h2>
+      <table>
+        <thead><tr><th scope="col">Setting</th><th scope="col">Value</th>{hasNotes && <th scope="col" class="proj__note">Note</th>}</tr></thead>
+        <tbody>
+          {d.results.map((r) => (
+            <tr class:list={{ best: r.best }}>
+              <th scope="row">{r.label}</th>
+              <td class="num">{r.value}</td>
+              {hasNotes && <td class="proj__note soft">{r.note ?? ''}</td>}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      {d.resultsCaption && <p class="mono soft proj__tcap">{d.resultsCaption}</p>}
+    </section>
+  )}
+
+  <section class="proj__stack" aria-labelledby="stack-h">
+    <h2 id="stack-h" class="label">Stack</h2>
+    <p class="mono">{d.stack.join(' · ')}</p>
+  </section>
+
+  {(prev || next) && (
+    <nav class="proj-nav" aria-label="Adjacent projects">
+      {prev ? (
+        <a class="proj-nav__a" href={hrefOf(prev)} rel="prev" data-prev>
+          <span class="label">← Previous</span>
+          <span class="proj-nav__t">{prev.data.label}</span>
+        </a>
+      ) : <span />}
+      {next ? (
+        <a class="proj-nav__a proj-nav__a--next" href={hrefOf(next)} rel="next" data-next>
+          <span class="label">Next →</span>
+          <span class="proj-nav__t">{next.data.label}</span>
+        </a>
+      ) : <span />}
+    </nav>
+  )}
+</article>
+
+<style>
+  .proj__head { grid-column: 1 / -1; display: grid; grid-template-columns: subgrid; align-items: start; row-gap: var(--s-6); margin-bottom: var(--s-8); }
+  .proj__titles { grid-column: 1 / span 6; display: grid; gap: var(--s-4); }
+  .proj__titles h1 { font-size: clamp(2.2rem, 1.5rem + 2.6vw, 4.2rem); font-weight: 500; letter-spacing: -0.03em; }
+  .proj__summary { font-family: var(--f-body); font-size: var(--t-lead); font-weight: 300; line-height: 1.32; color: var(--ink-soft); max-width: 40ch; }
+  .proj__links { display: flex; flex-wrap: wrap; gap: .2rem 1.4rem; font-size: .75rem; }
+  .proj__links a { display: inline-block; padding-block: .35rem; text-decoration-color: var(--accent); }
+  .proj__figure { grid-column: 8 / -1; display: grid; gap: var(--s-3); max-width: 560px; justify-self: end; width: 100%; }
+  .proj__figure figcaption { font-size: .7rem; color: var(--ink-soft); line-height: 1.5; }
+
+  .proj__abstract { grid-column: 1 / span 8; display: grid; gap: var(--s-3); margin-bottom: var(--s-6); }
+  .proj__abstract .lead { font-size: clamp(1.15rem, 1rem + .5vw, 1.45rem); }
+  .proj__body { grid-column: 1 / span 7; max-width: none; }
+  .proj__body :global(h2) { margin-top: 1.8em; }
+  .proj__results, .proj__stack { grid-column: 1 / span 7; margin-top: var(--s-7); }
+  .proj__results h2, .proj__stack h2 { margin-bottom: var(--s-3); }
+  .proj__results table { width: 100%; font-size: var(--t-small); }
+  .proj__results th, .proj__results td { text-align: left; padding: .55rem .8rem .55rem 0; border-bottom: var(--hair) solid var(--rule); vertical-align: baseline; }
+  .proj__results thead th { font: 400 .66rem/1.2 var(--f-mono); text-transform: uppercase; letter-spacing: .1em; color: var(--ink-soft); border-bottom-color: var(--ink); }
+  .proj__results tbody th { font-weight: 400; }
+  .proj__results td.num { font-size: .82rem; white-space: nowrap; }
+  .proj__results tr.best td.num { color: var(--accent); font-weight: 500; }
+  .proj__note { font: 400 .72rem/1.4 var(--f-mono); }
+  .proj__tcap { margin-top: var(--s-3); font-size: .72rem; max-width: 70ch; }
+  .proj__stack p { font-size: .8rem; color: var(--ink-soft); }
+
+  .proj-nav { grid-column: 1 / -1; margin-top: var(--s-8); display: grid; grid-template-columns: 1fr 1fr; align-items: start; gap: var(--s-5); border-top: var(--hair) solid var(--ink); padding-top: var(--s-5); }
+  .proj-nav__a { display: grid; gap: .4rem; text-decoration: none; }
+  .proj-nav__a--next { text-align: right; }
+  .proj-nav__t { font-family: var(--f-display); font-size: var(--t-h3); line-height: 1.1; }
+  .proj-nav__a:hover .proj-nav__t { color: var(--accent); }
+
+
+  @media (max-width: 860px) {
+    .proj__head { display: grid; grid-template-columns: 1fr; }
+    .proj__titles, .proj__figure, .proj__abstract, .proj__body, .proj__results, .proj__stack { grid-column: 1 / -1; }
+    .proj__figure { justify-self: start; max-width: 100%; }
+    .proj__note { display: none; }
+  }
+</style>

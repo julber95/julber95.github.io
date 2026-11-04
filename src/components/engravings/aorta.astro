@@ -176,7 +176,7 @@ const aP = pol(-8 * DEG, rIn(-8 * DEG) + 4);
 const bP = pol(23 * DEG, 318), bE = pol(23 * DEG, 440);
 const cP = pol(-14 * DEG, 388), cE = pol(-14 * DEG, 438);
 ---
-<Frame uid={uid} title={title} desc={desc} numeral="VI" taxon="Aorta inflammata" keyText="red · inflammatory infiltrates">
+<Frame uid={uid} title={title} desc={desc} numeral="VI" taxon="Aorta inflammata" keyText="blue · inflammatory infiltrates">
   <defs>
     {plaques.map((pq) => <clipPath id={pq.id}><path d={pq.d} /></clipPath>)}
     {vasaRing.map((v) => <clipPath id={v.id}><path d={ring(v.c, v.r, v.lr)} clip-rule="evenodd" /></clipPath>)}

@@ -4,20 +4,19 @@ import { getNotes } from '../../lib/notes';
 import { fmtDate, isoDate } from '../../lib/format';
 const notes = await getNotes();
 ---
-<Base title="Notes" description="Notes and short essays on machine learning, sampling, decoding and explainability.">
+<Base title="Notes" noindex={notes.length === 0} description="Notes and short essays on machine learning, sampling, decoding and explainability.">
   <div class="page page-top notes">
     <header class="notes__head">
-      <p class="label" data-reveal>§6 · Notes</p>
-      <h1 data-reveal style="--i:1">Notes <em>from the margins</em></h1>
+      <p class="label" data-reveal>Notes</p>
+      <h1 data-reveal style="--i:1">Notes</h1>
       <p class="soft notes__intro" data-reveal style="--i:2">
-        Longer marginalia: things that didn't fit on a plate.{notes.some((n) => !n.data.draft) && <> <a href="/rss.xml">Follow by RSS</a>.</>}
+        Longer write-ups on things that didn't fit on a project page.{notes.some((n) => !n.data.draft) && <> <a href="/rss.xml">Follow by RSS</a>.</>}
       </p>
     </header>
 
     {notes.length === 0 ? (
       <p class="notes__empty c-text" data-reveal>
-        <span class="label">Folio blank</span>
-        <span class="notes__empty-t">The first note is still being written. In the meantime, the plates have plenty of marginalia.</span>
+        <span class="notes__empty-t">No notes yet.</span>
       </p>
     ) : (
       <ol class="notes__list" role="list">
@@ -37,8 +36,8 @@ const notes = await getNotes();
 </Base>
 <style>
   .notes__head { grid-column: 2 / span 9; display: grid; gap: var(--s-5); margin-bottom: var(--s-8); }
-  .notes__head h1 { font-size: clamp(2.6rem, 1.6rem + 4vw, 6rem); }
-  .notes__intro { font-family: var(--f-display); font-size: var(--t-lead); font-weight: 340; }
+  .notes__head h1 { font-size: clamp(2.4rem, 1.5rem + 3vw, 4.6rem); font-weight: 500; letter-spacing: -0.03em; }
+  .notes__intro { font-family: var(--f-body); font-size: var(--t-lead); font-weight: 300; }
   .notes__intro a { color: var(--ink); text-decoration-color: var(--accent); }
   .notes__list { grid-column: 1 / -1; display: grid; grid-template-columns: subgrid; border-top: var(--hair) solid var(--ink); }
   .note-row { grid-column: 1 / -1; display: grid; grid-template-columns: subgrid; padding-block: var(--s-5); border-bottom: var(--hair) solid var(--rule); align-items: baseline; }
@@ -49,7 +48,7 @@ const notes = await getNotes();
   .note-row h2 a:hover { color: var(--accent); font-style: italic; }
   .note-row__tags { grid-column: 10 / -1; font-size: .72rem; }
   .notes__empty { display: grid; gap: .6rem; padding-block: var(--s-6); border-block: var(--hair) solid var(--rule); }
-  .notes__empty-t { font-family: var(--f-display); font-style: italic; font-size: 1.3rem; color: var(--ink-soft); }
+  .notes__empty-t { font-family: var(--f-body); font-style: italic; font-size: 1.3rem; color: var(--ink-soft); }
   @media (max-width: 860px) {
     .notes__head { grid-column: 1 / -1; }
     .notes__list, .note-row { display: block; }

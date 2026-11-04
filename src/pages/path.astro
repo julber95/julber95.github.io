@@ -9,13 +9,13 @@ const plates = await getPlates();
 const rendered = await Promise.all(entries.map(async (e) => ({ e, Content: (await render(e)).Content, hasBody: !!e.body?.trim() })));
 const now = new Date();
 ---
-<Base title="Field Log" description="Field log: education and experience as one expedition journal, from Paris-Dauphine to PSL, INSEE and AMIAD.">
+<Base title="Field Log" description="Education and work, from Paris-Dauphine to Université PSL, INSEE and AMIAD.">
   <div class="page page-top log">
     <header class="log__head">
-      <p class="label" data-reveal>§3 · Field Log</p>
-      <h1 data-reveal style="--i:1">Where the specimens <em>were collected</em></h1>
+      <p class="label" data-reveal>Field Log</p>
+      <h1 data-reveal style="--i:1">Education <em>&amp; work</em></h1>
       <p class="log__intro soft" data-reveal style="--i:2">
-        Studies and field work as a single journal, most recent entry first. Each stop lists the plates made there.
+        Studies and field work, most recent first, with the projects made along the way.
       </p>
       <p class="log__print no-print mono" data-reveal style="--i:3">
         <a href="/cv.pdf">Curriculum vitae (PDF)</a> · or print this page
@@ -50,15 +50,14 @@ const now = new Date();
               )}
               {linked.length > 0 && (
                 <p class="entry__plates mono">
-                  <span class="label">Plates</span>
-                  {linked.map((p) => <a href={hrefOf(p!)}>{p!.data.numeral} <span class="soft">{p!.data.short}</span></a>)}
+                  <span class="label">Projects</span>
+                  {linked.map((p) => <a href={hrefOf(p!)}>{p!.data.label}</a>)}
                 </p>
               )}
             </div>
             <div class="entry__where mono">
               <span>{d.when}</span>
               <span class="soft">{d.place}</span>
-              <span class="soft">{d.coords}</span>
             </div>
           </li>
         );
@@ -74,31 +73,30 @@ const now = new Date();
 
 <style>
   .log__head { grid-column: 2 / span 9; display: grid; gap: var(--s-5); margin-bottom: var(--s-8); }
-  .log__head h1 { font-size: clamp(2.6rem, 1.6rem + 4vw, 6rem); }
-  .log__intro { max-width: 54ch; font-size: var(--t-lead); font-family: var(--f-display); line-height: 1.35; font-weight: 340; }
+  .log__head h1 { font-size: clamp(2.4rem, 1.5rem + 3vw, 4.6rem); font-weight: 500; letter-spacing: -0.03em; }
+  .log__intro { max-width: 54ch; font-size: var(--t-lead); font-family: var(--f-body); line-height: 1.35; font-weight: 300; }
   .log__print { font-size: .75rem; color: var(--ink-soft); }
   .log__print a { text-decoration-color: var(--accent); color: var(--ink); }
 
   .journal { grid-column: 1 / -1; display: grid; grid-template-columns: subgrid; position: relative; }
-  .entry { grid-column: 1 / -1; display: grid; grid-template-columns: subgrid; position: relative; padding-bottom: var(--s-8); }
+  .entry { grid-column: 1 / -1; display: grid; grid-template-columns: subgrid; position: relative; padding-bottom: var(--s-7); }
   .entry__year { grid-column: 1 / span 1; }
-  .entry__y { white-space: nowrap; font-family: var(--f-display); font-size: clamp(1.7rem, 1rem + 1.4vw, 2.5rem); font-weight: 300; line-height: .9; font-variation-settings: 'opsz' 144; position: sticky; top: 6rem; display: block; }
+  .entry__y { white-space: nowrap; font-family: var(--f-mono); font-size: .8rem; letter-spacing: .08em; padding-top: .55rem; font-weight: 300; line-height: .9; font-variation-settings: 'opsz' 144; position: sticky; top: 6rem; display: block; }
   .entry__mark { grid-column: 2 / span 1; position: relative; justify-self: start; width: 100%; }
-  .entry__mark::before { content: ''; position: absolute; left: 6px; top: 0; bottom: calc(-1 * var(--s-8)); width: var(--hair); background: var(--rule); }
+  .entry__mark::before { content: ''; position: absolute; left: 6px; top: 0; bottom: calc(-1 * var(--s-7)); width: var(--hair); background: var(--rule); }
   .entry:last-child .entry__mark::before { bottom: 0; }
   .entry__mark span { position: absolute; left: 0; top: .55rem; width: 13px; height: 13px; border-radius: 50%; border: var(--hair) solid var(--ink); background: var(--bg); }
   .entry--current .entry__mark span { background: var(--accent); border-color: var(--accent); }
   .entry__body { grid-column: 3 / span 6; display: grid; gap: .5rem; align-content: start; }
   .entry__now { color: var(--accent); }
   .entry__title { font-size: var(--t-h3); line-height: 1.15; font-weight: 420; }
-  .entry__org { font-family: var(--f-display); font-style: italic; color: var(--ink-soft); font-size: 1.08rem; }
+  .entry__org { font-family: var(--f-body); font-style: italic; color: var(--ink-soft); font-size: 1.08rem; }
   .entry__text { max-width: 58ch; margin-top: .3rem; }
   .entry__text :global(code) { font-family: var(--f-mono); font-size: .84em; }
   .entry__courses { font-size: var(--t-small); color: var(--ink-soft); max-width: 62ch; margin-top: .3rem; }
   .entry__courses .label, .entry__plates .label { margin-right: .6rem; }
   .entry__plates { display: flex; flex-wrap: wrap; gap: .3rem 1rem; font-size: .75rem; margin-top: .3rem; align-items: baseline; }
-  .entry__plates a { text-decoration: none; color: var(--accent); }
-  .entry__plates a:hover .soft { color: var(--ink); }
+  .entry__plates a { color: var(--ink); text-decoration-color: var(--accent); }
   .entry__where { grid-column: 10 / -1; display: grid; gap: .2rem; font-size: .75rem; align-content: start; padding-top: .5rem; }
 
   .log__lang { grid-column: 3 / span 6; padding-top: var(--s-5); border-top: var(--hair) solid var(--ink); display: grid; gap: .5rem; }

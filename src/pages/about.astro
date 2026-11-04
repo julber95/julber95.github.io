@@ -1,25 +1,16 @@
 ---
 import { getEntry, render } from 'astro:content';
 import Base from '../layouts/Base.astro';
-import { getPlates, hrefOf } from '../lib/plates';
 import { skills } from '../data/skills';
 import { site } from '../data/site';
 
 const entry = (await getEntry('pages', 'about'))!;
 const { Content } = await render(entry);
-const plates = await getPlates();
-const toRoman = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII'];
-const refs = (name: string, explicit?: string[]) => {
-  const list = explicit ?? plates.filter((p) => p.data.stack.some((s) => s.toLowerCase() === name.toLowerCase())).map((p) => p.data.numeral);
-  return list.sort((a, b) => toRoman.indexOf(a) - toRoman.indexOf(b))
-    .map((n) => plates.find((p) => p.data.numeral === n)!)
-    .filter(Boolean);
-};
 ---
-<Base person title="About" description="About Julien Bernardi: what draws him to machine learning, the design side, and an index of the instruments he works with.">
+<Base person title="About" description="About Julien Bernardi: what draws him to machine learning, the design side, and the tools he works with.">
   <div class="page page-top about">
     <header class="about__head">
-      <p class="label" data-reveal>§4 · About</p>
+      <p class="label" data-reveal>About</p>
       <h1 data-reveal style="--i:1">{entry.data.lede}</h1>
     </header>
 
@@ -29,72 +20,45 @@ const refs = (name: string, explicit?: string[]) => {
 
     <aside class="about__margin mono" data-reveal style="--i:3">
       <dl>
-        <div><dt>Based in</dt><dd>{site.place}<br /><span class="soft">{site.coords}</span></dd></div>
+        <div><dt>Based in</dt><dd>{site.place}</dd></div>
         <div><dt>Currently</dt><dd>{site.status.map((s) => `${s.label} @ ${s.at}`).join(' · ')}</dd></div>
-        <div><dt>Languages</dt><dd>French, native<br />English, C1</dd></div>
+        <div><dt>Languages</dt><dd>French, native · English, C1</dd></div>
         <div><dt>Write to</dt><dd><a href={`mailto:${site.email}`}>{site.email}</a></dd></div>
       </dl>
     </aside>
 
-    <section class="index" aria-labelledby="index-h">
-      <header class="section-head">
-        <span class="label">Index</span>
-        <h2 id="index-h">Index of <em>methods &amp; tools</em></h2>
-        <span class="aside label">with the plates that used them</span>
-      </header>
-      <div class="index__cols">
+    <section class="skills" aria-labelledby="skills-h">
+      <h2 id="skills-h" class="label">Tools &amp; methods</h2>
+      <dl class="skills__list">
         {skills.map((g) => (
-          <section class="index__group" aria-label={g.group}>
-            <h3 class="index__g">{g.group}</h3>
-            <ul role="list">
-              {g.items.map((it) => {
-                const r = refs(it.name, it.plates);
-                return (
-                  <li class="index__item">
-                    <span class="index__name">{it.name}</span>
-                    <span class="index__dots" aria-hidden="true"></span>
-                    <span class="index__refs mono">
-                      {r.length ? r.map((p, i) => <>{i > 0 && ', '}<a href={hrefOf(p)} aria-label={`Plate ${p.data.numeral}: ${p.data.short}`}>{p.data.numeral}</a></>) : <span class="soft" aria-label="no plate yet">·</span>}
-                    </span>
-                  </li>
-                );
-              })}
-            </ul>
-          </section>
+          <div class="skills__row">
+            <dt>{g.group}</dt>
+            <dd>{g.items.map((i) => i.name).join(', ')}</dd>
+          </div>
         ))}
-      </div>
+      </dl>
     </section>
   </div>
 </Base>
 
 <style>
-  .about__head { grid-column: 2 / span 9; margin-bottom: var(--s-8); display: grid; gap: var(--s-5); }
-  .about__head h1 { font-size: clamp(2.6rem, 1.6rem + 4vw, 6rem); max-width: 16ch; }
-  .about__essay { grid-column: 2 / span 7; font-size: 1.12em; }
-  .about__essay :global(p:first-of-type::first-letter) {
-    font-family: var(--f-display); float: left; font-size: 4.4em; line-height: .82; padding: .06em .1em 0 0; font-weight: 340; color: var(--accent);
-  }
-  .about__margin { grid-column: 10 / -1; font-size: .75rem; }
-  .about__margin dl { display: grid; gap: 1.1rem; padding-top: .8rem; border-top: var(--hair) solid var(--ink); position: sticky; top: 6rem; }
-  .about__margin dt { text-transform: uppercase; letter-spacing: .1em; color: var(--ink-soft); font-size: .66rem; margin-bottom: .25rem; }
+  .about__head { grid-column: 1 / span 8; margin-bottom: var(--s-7); display: grid; gap: var(--s-4); }
+  .about__head h1 { font-size: clamp(2.4rem, 1.5rem + 3vw, 4.6rem); font-weight: 500; letter-spacing: -0.03em; max-width: 18ch; }
+  .about__essay { grid-column: 1 / span 7; font-size: 1.08em; }
+  .about__margin { grid-column: 9 / -1; font-size: .75rem; }
+  .about__margin dl { display: grid; gap: 1rem; padding-top: .8rem; border-top: var(--hair) solid var(--ink); }
+  .about__margin dt { text-transform: uppercase; letter-spacing: .1em; color: var(--ink-soft); font-size: .66rem; margin-bottom: .2rem; }
   .about__margin a { text-decoration-color: var(--accent); }
 
-  .index { grid-column: 1 / -1; display: grid; grid-template-columns: subgrid; margin-top: var(--s-9); }
-  .index__cols { grid-column: 2 / -1; columns: 3 15rem; column-gap: var(--gutter); }
-  .index__group { break-inside: avoid; margin-bottom: var(--s-7); }
-  .index__g { font-family: var(--f-display); font-style: italic; font-size: 1.35rem; font-weight: 400; margin-bottom: var(--s-3); padding-bottom: .4rem; border-bottom: var(--hair) solid var(--rule); }
-  .index__item { display: flex; align-items: baseline; gap: .4rem; padding-block: .22rem; }
-  .index__name { font-size: var(--t-small); }
-  .index__dots { flex: 1; border-bottom: 1.5px dotted var(--rule); transform: translateY(-.25em); min-width: 1rem; }
-  .index__refs { font-size: .72rem; white-space: nowrap; }
-  .index__refs a { color: var(--accent); text-decoration: none; display: inline-block; padding: 3px 2px; min-width: 24px; text-align: center; }
-  .index__refs a:hover { text-decoration: underline; }
-  .index__refs .soft { font-style: italic; font-family: var(--f-display); font-size: .9rem; }
+  .skills { grid-column: 1 / span 8; margin-top: var(--s-8); display: grid; gap: var(--s-4); }
+  .skills__list { border-top: var(--hair) solid var(--ink); }
+  .skills__row { display: grid; grid-template-columns: 10rem 1fr; gap: 1rem; padding-block: .75rem; border-bottom: var(--hair) solid var(--rule); align-items: baseline; }
+  .skills__row dt { font: 400 .7rem/1.4 var(--f-mono); text-transform: uppercase; letter-spacing: .1em; color: var(--ink-soft); }
+  .skills__row dd { font-size: var(--t-small); }
 
   @media (max-width: 860px) {
-    .about__head, .about__essay, .about__margin, .index__cols { grid-column: 1 / -1; }
-    .about__margin { margin-top: var(--s-7); }
-    .about__margin dl { position: static; }
-    .index { display: block; }
+    .about__head, .about__essay, .about__margin, .skills { grid-column: 1 / -1; }
+    .about__margin { margin-top: var(--s-6); }
+    .skills__row { grid-template-columns: 1fr; gap: .2rem; }
   }
 </style>

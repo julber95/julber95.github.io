@@ -1,6 +1,6 @@
 ---
 import Base from '../../layouts/Base.astro';
-import PlateArticle from '../../components/PlateArticle.astro';
+import ProjectArticle from '../../components/ProjectArticle.astro';
 import { getPlates, slugOf, type Plate } from '../../lib/plates';
 
 export async function getStaticPaths() {
@@ -13,11 +13,6 @@ export async function getStaticPaths() {
 interface Props { plate: Plate; prev?: Plate; next?: Plate }
 const { plate, prev, next } = Astro.props;
 ---
-<Base
-  title={`Plate ${plate.data.numeral}: ${plate.data.short}`}
-  description={plate.data.abstract}
-  ogImage={`/og/${slugOf(plate)}.png`}
-  type="article"
->
-  <PlateArticle plate={plate} prev={prev} next={next} />
+<Base title={plate.data.label} description={plate.data.summary} ogImage={`/og/${slugOf(plate)}.png`} type="article">
+  <ProjectArticle plate={plate} prev={prev} next={next} />
 </Base>

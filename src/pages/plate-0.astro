@@ -1,12 +1,12 @@
 ---
 import { getEntry } from 'astro:content';
 import Base from '../layouts/Base.astro';
-import PlateArticle from '../components/PlateArticle.astro';
+import ProjectArticle from '../components/ProjectArticle.astro';
 const plate = (await getEntry('plates', '00-atlas'))!;
 ---
-<Base title="Plate 0: the atlas itself" description={plate.data.abstract} noindex>
-  <PlateArticle plate={plate} />
-  <p class="page zero-foot mono soft"><span class="c-text">You found the unlisted plate. It isn't in the sitemap, the catalogue, or the field. Well done, careful reader.</span></p>
+<Base title="The atlas itself" description={plate.data.summary} noindex>
+  <ProjectArticle plate={plate} />
+  <p class="page zero-foot mono soft"><span class="c-text">You found the unlisted page. It isn't in the sitemap or the list of work. Well done, careful reader.</span></p>
 </Base>
 <style>
   .zero-foot { font-size: .75rem; margin-top: var(--s-6); }

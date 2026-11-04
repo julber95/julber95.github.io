@@ -7,20 +7,20 @@ import { rng } from '../../lib/engrave';
 
 const font = (f: string) => readFileSync(new URL(`../../../node_modules/@fontsource/${f}`, import.meta.url));
 const fonts = [
-  { name: 'Fraunces', data: font('fraunces/files/fraunces-latin-300-normal.woff'), weight: 300 as const, style: 'normal' as const },
-  { name: 'Fraunces', data: font('fraunces/files/fraunces-latin-300-italic.woff'), weight: 300 as const, style: 'italic' as const },
+  { name: 'Grotesk', data: font('space-grotesk/files/space-grotesk-latin-500-normal.woff'), weight: 500 as const, style: 'normal' as const },
+  { name: 'Grotesk', data: font('space-grotesk/files/space-grotesk-latin-300-normal.woff'), weight: 300 as const, style: 'normal' as const },
   { name: 'Plex', data: font('ibm-plex-mono/files/ibm-plex-mono-latin-400-normal.woff'), weight: 400 as const, style: 'normal' as const },
 ];
 
-const C = { bg: '#F3EEE3', ink: '#1A1814', soft: '#5B554B', rule: '#CFC6B4', accent: '#B8432F' };
+const C = { bg: '#F4F7FB', ink: '#0E2A47', soft: '#52677F', rule: '#D6DFEA', accent: '#0A5FE0' };
 
 export async function getStaticPaths() {
   const plates = await getPlates();
   return [
-    { params: { slug: 'index' }, props: { kicker: 'An Atlas of Learned Things', title: 'Julien Bernardi keeps an atlas of the models he has taken apart.', taxon: 'Vol. I · Plates I–VII', seed: 1 } },
+    { params: { slug: 'index' }, props: { kicker: 'An atlas of models taken apart', title: 'Julien Bernardi', taxon: 'AI/ML student at Université PSL and AI engineer at AMIAD.', seed: 1 } },
     ...plates.map((p) => ({
       params: { slug: slugOf(p) },
-      props: { kicker: `Plate ${p.data.numeral} · ${p.data.domain} · ${p.data.observed}`, title: p.data.title, taxon: p.data.taxon, seed: p.data.order * 101 },
+      props: { kicker: `Project · ${p.data.domain} · ${p.data.observed}`, title: p.data.title, taxon: p.data.summary, seed: p.data.order * 101 },
     })),
   ];
 }
@@ -54,8 +54,8 @@ export const GET: APIRoute = async ({ props }) => {
       ]),
       h('div', { display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between' }, [
         h('div', { display: 'flex', flexDirection: 'column', width: 720 }, [
-          h('div', { fontFamily: 'Fraunces', fontWeight: 300, fontSize: title.length > 60 ? 60 : 72, lineHeight: 1.02, color: C.ink, letterSpacing: -1.5 }, title),
-          h('div', { fontFamily: 'Fraunces', fontStyle: 'italic', fontWeight: 300, fontSize: 34, color: C.accent, marginTop: 20 }, taxon),
+          h('div', { fontFamily: 'Grotesk', fontWeight: 500, fontSize: title.length > 60 ? 58 : 70, lineHeight: 1.02, color: C.ink, letterSpacing: -2 }, title),
+          h('div', { fontFamily: 'Grotesk', fontWeight: 300, fontSize: 28, lineHeight: 1.3, color: C.accent, marginTop: 20 }, taxon),
         ]),
         h('img', { width: 240, height: 240 }, undefined, { src: stippleSvg(seed), width: 240, height: 240 }),
       ]),

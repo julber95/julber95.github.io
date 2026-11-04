@@ -1,0 +1,8 @@
+---
+import type { Plate } from '../lib/plates';
+interface Props { plate: Plate; withTeam?: boolean; prefix?: boolean }
+const { plate, withTeam = false, prefix = true } = Astro.props;
+const d = plate.data;
+const parts = [...(prefix ? ['Project'] : []), d.domain, String(d.observed), ...(withTeam && d.team ? [d.team] : [])];
+---
+<p class="kicker label">{parts.join(' · ')}</p>

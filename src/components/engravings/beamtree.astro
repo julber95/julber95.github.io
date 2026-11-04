@@ -1,6 +1,6 @@
 ---
 /* Plate IV: autoregressive decoding. A beam-search token tree drawn as an engraved branch,
-   growing left to right from the prompt; the surviving beam is traced in vermilion. */
+   growing left to right from the prompt; the surviving beam is traced in the accent colour. */
 import Frame from './Frame.astro';
 import { rng, line, smooth, wobble, hatch, closed, blob, sampleCurve, taper, int, type P } from '../../lib/engrave';
 
@@ -100,7 +100,7 @@ for (let d = 1; d <= 5; d++) for (let y = 44; y <= 404; y += 4.5) guides += `M${
 // continuation after the last step: the decoded sentence trails off
 const cont = wobble([tip[0] + 5, tip[1]], [tip[0] + 26, tip[1] + 0.5], R, 0.3, 3);
 ---
-<Frame uid={uid} title={title} desc={desc} numeral="IV" taxon="Lingua autoregressiva" keyText="red · the surviving beam">
+<Frame uid={uid} title={title} desc={desc} numeral="IV" taxon="Lingua autoregressiva" keyText="blue · the surviving beam">
   <defs>
     {leaves.map((l) => <clipPath id={l.id}><path d={l.d} /></clipPath>)}
     <clipPath id={`${uid}-cut`}><path d={closed(cutEnd)} /></clipPath>
