@@ -19,7 +19,7 @@ const key = latest.data.results.find((r) => r.best);
       <p class="label" data-reveal>An atlas of models taken apart</p>
       <div class="home__who" data-reveal style="--i:1">
         {portrait
-          ? <img class="home__photo" src={`/${portrait}`} alt="Portrait of Julien Bernardi" width="96" height="96" />
+          ? <img class="home__photo" src={`/${portrait}`} alt="Portrait of Julien Bernardi" width="136" height="136" />
           : <span class="home__photo home__photo--empty" aria-hidden="true">JB</span>}
         <h1 id="home-title" class="home__name">Julien Bernardi</h1>
       </div>
@@ -71,7 +71,7 @@ const key = latest.data.results.find((r) => r.best);
     line-height: 0.95;
   }
   .home__who { display: flex; align-items: center; gap: var(--s-5); }
-  .home__photo { width: clamp(72px, 6vw, 96px); height: clamp(72px, 6vw, 96px); border-radius: 50%; object-fit: cover; flex: none; border: var(--hair) solid var(--rule); background: var(--surface); }
+  .home__photo { width: clamp(96px, 9vw, 136px); height: clamp(96px, 9vw, 136px); border-radius: 50%; object-fit: cover; flex: none; border: var(--hair) solid var(--rule); background: var(--surface); }
   .home__photo--empty { display: grid; place-items: center; font-family: var(--f-display); font-size: 1.5rem; font-weight: 500; line-height: 1; letter-spacing: -.03em; color: var(--ink-soft); }
   .home__lead { font-family: var(--f-body); font-size: clamp(1.3rem, 1.05rem + 0.8vw, 1.75rem); font-weight: 300; line-height: 1.32; max-width: 30ch; }
   .home__lead em { color: var(--accent); }
