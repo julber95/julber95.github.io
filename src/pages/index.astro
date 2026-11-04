@@ -16,7 +16,7 @@ const key = latest.data.results.find((r) => r.best);
 <Base person>
   <div class="page home">
     <section class="home__intro" aria-labelledby="home-title">
-      <p class="label" data-reveal>An atlas of models taken apart</p>
+      <p class="label" data-reveal>AI / ML student · Paris</p>
       <div class="home__who" data-reveal style="--i:1">
         {portrait
           ? <img class="home__photo" src={`/${portrait}`} alt="Portrait of Julien Bernardi" width="136" height="136" />
@@ -27,8 +27,13 @@ const key = latest.data.results.find((r) => r.best);
         AI/ML student at Université PSL. I take models apart to see{' '}
         <em>what they actually learned.</em>
       </p>
+      <div class="home__links" data-reveal style="--i:3">
+        <a class="btn btn--primary" href="/work/">See my work →</a>
+        <a class="btn" href={site.github}>GitHub</a>
+        <a class="btn" href={site.linkedin}>LinkedIn</a>
+        <a class="btn" href={`mailto:${site.email}`}>Email</a>
+      </div>
       <p class="home__now label" data-reveal style="--i:3">
-        <span class="label--ink">Currently</span>
         <span>{site.status.map((s) => `${s.label} @ ${s.at}`).join(' · ')} · Paris region</span>
       </p>
     </section>
@@ -73,6 +78,11 @@ const key = latest.data.results.find((r) => r.best);
   .home__who { display: flex; align-items: center; gap: var(--s-5); }
   .home__photo { width: clamp(96px, 9vw, 136px); height: clamp(96px, 9vw, 136px); border-radius: 50%; object-fit: cover; flex: none; border: var(--hair) solid var(--rule); background: var(--surface); }
   .home__photo--empty { display: grid; place-items: center; font-family: var(--f-display); font-size: 1.5rem; font-weight: 500; line-height: 1; letter-spacing: -.03em; color: var(--ink-soft); }
+  .home__links { display: flex; flex-wrap: wrap; gap: .6rem; }
+  .btn { font: 500 .78rem/1 var(--f-mono); letter-spacing: .04em; text-decoration: none; padding: .7rem 1rem; border: var(--hair) solid var(--rule); border-radius: 999px; color: var(--ink); background: var(--surface); transition: border-color var(--dur-1) var(--ease), color var(--dur-1) var(--ease), filter var(--dur-1) var(--ease); }
+  .btn:hover { border-color: var(--accent); color: var(--accent); }
+  .btn--primary { background: var(--accent); border-color: var(--accent); color: var(--bg); }
+  .btn--primary:hover { color: var(--bg); filter: brightness(1.1); }
   .home__lead { font-family: var(--f-body); font-size: clamp(1.3rem, 1.05rem + 0.8vw, 1.75rem); font-weight: 300; line-height: 1.32; max-width: 30ch; }
   .home__lead em { color: var(--accent); }
   .home__now { display: flex; flex-wrap: wrap; gap: .3rem 1.2rem; padding-top: var(--s-4); border-top: var(--hair) solid var(--rule); max-width: 34rem; }

@@ -1,6 +1,6 @@
 export const site = {
   name: 'Julien Bernardi',
-  title: 'An atlas of models taken apart',
+  title: 'AI/ML student, Paris',
   description:
     'Julien Bernardi, AI/ML student at Université PSL and AI engineer at AMIAD. Machine-learning models taken apart: generative models, NLP, medical imaging.',
   url: 'https://julber95.github.io',

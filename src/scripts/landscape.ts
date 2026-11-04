@@ -211,7 +211,7 @@ export function mountLandscape(root: HTMLElement) {
     mode = 'done';
     const i = nearestBasin(ball);
     setActive(i, true);
-    caption.innerHTML = `<span class="ink">Fig. 1.</span> Settled in <em>${basins[i]!.label}</em>. Opening…`;
+    caption.innerHTML = `Settled in <em>${basins[i]!.label}</em>. Opening…`;
     setTimeout(() => { location.href = basins[i]!.href; }, reduce ? 150 : 420);
   }
 
@@ -237,7 +237,7 @@ export function mountLandscape(root: HTMLElement) {
     active = i;
     labels.forEach((l, k) => l.classList.toggle('is-active', k === i));
     if (mode !== 'done') {
-      caption.innerHTML = i < 0 ? defaultCaption : `<span class="ink">Fig. 1.</span> <em>${basins[i]!.label}</em>: ${basins[i]!.caption}`;
+      caption.innerHTML = i < 0 ? defaultCaption : `<em>${basins[i]!.label}</em>: ${basins[i]!.caption}`;
     }
     fieldDirty = true;
     if (!running) draw(performance.now());

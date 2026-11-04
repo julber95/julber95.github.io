@@ -17,7 +17,7 @@ const C = { bg: '#F4F7FB', ink: '#0E2A47', soft: '#52677F', rule: '#D6DFEA', acc
 export async function getStaticPaths() {
   const plates = await getPlates();
   return [
-    { params: { slug: 'index' }, props: { kicker: 'An atlas of models taken apart', title: 'Julien Bernardi', taxon: 'AI/ML student at Université PSL and AI engineer at AMIAD.', seed: 1 } },
+    { params: { slug: 'index' }, props: { kicker: 'AI / ML student · Paris', title: 'Julien Bernardi', taxon: 'AI/ML student at Université PSL and AI engineer at AMIAD.', seed: 1 } },
     ...plates.map((p) => ({
       params: { slug: slugOf(p) },
       props: { kicker: `Project · ${p.data.domain} · ${p.data.observed}`, title: p.data.title, taxon: p.data.summary, seed: p.data.order * 101 },
