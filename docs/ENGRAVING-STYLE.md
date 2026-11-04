@@ -2,14 +2,14 @@
 
 Each plate has one bespoke engraving: an inline SVG drawn **in code** at build time, in the manner of a
 19th-century natural-history plate (copper engraving, stipple, hatching). The reference implementation is
-`src/components/engravings/roots.astro` (Plate VII). Read it before drawing anything.
+`src/components/engravings/roots.astro` (the INSEE project). Read it before drawing anything.
 
 ## 1. Contract
 
 - File: `src/components/engravings/<name>.astro`, where `<name>` is the plate's `engraving` key
   (`forest`, `house`, `digits`, `beamtree`, `lymph`, `aorta`, `roots`, `atlas`).
 - Props: `{ uid: string; title: string; desc: string }`. Wrap everything in
-  `<Frame uid title desc numeral="…" taxon="…" keyText="…">` from `./Frame.astro`. It provides the
+  `<Frame uid title desc keyText="…">` from `./Frame.astro`. It provides the
   `viewBox="0 0 600 450"`, the double neat-line, `<title>`/`<desc>` and the foot line.
 - **Drawing area:** inside the inner frame, x 14–586 and y 14–420. Nothing below y = 424 (the foot line lives there).
 - Prefix every `id` (clipPath, pattern) with `uid`, because several engravings can share a page.
@@ -24,20 +24,20 @@ Only these classes (defined in `src/styles/engraving.css`):
 |---|---|
 | `.k` | ink stroke (`currentColor`), round caps and joins |
 | `.fk` | ink fill: tapered burin cuts made with `taper()` |
-| `.a` / `.fa` | **accent (vermilion)** stroke / fill |
+| `.a` / `.fa` | **accent (blue)** stroke / fill |
 | `.bg` | paper-coloured fill, to knock out what lies behind a shape (pebbles, leaves, labels) |
 | `.faint` / `.mid` | stroke-opacity .45 / .7, for depth and recession only |
 | `.w04 .w05 .w08 .w10 .w13 .w18` | stroke widths |
 | `.lbl` | mono 8.5px UPPERCASE, soft ink: level names, scales |
 | `.lbl-k` | mono 8.5px ink: callouts |
 | `.lbl-a` | mono 8.5px accent: the one accent callout |
-| `.lbl-i` | Fraunces italic 12px: specimen names (rare) |
+| `.lbl-i` | IBM Plex Sans italic 12px: specimen names (rare) |
 
-**Accent rule:** vermilion marks **one idea per plate** (the fraud leaf, the rejected digits, the surviving
+**Accent rule:** the accent marks **one idea per plate** (the fraud leaf, the rejected digits, the surviving
 beam, the metastatic cluster, the inflamed infiltrate, the traced prediction), and covers ≤ 5% of the inked area.
 Never decorate with it.
 
-Both themes must work: ink is `currentColor` (dark ink on paper, cream ink in the darkroom). Never hard-code a colour.
+Both themes must work: ink is `currentColor` (navy ink on the light theme, pale blue ink on the dark one). Never hard-code a colour.
 
 ## 3. Line weights (the engraver's three burins, plus one)
 
