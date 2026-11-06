@@ -31,8 +31,8 @@ const key = latest.data.results.find((r) => r.best);
         <h1 id="home-title" class="home__name">Julien Bernardi</h1>
       </div>
       <p class="home__lead" data-reveal style="--i:2">
-        AI/ML student at Université PSL. I take models apart to see{' '}
-        <em>what they actually learned.</em>
+        Student at PSL University, and AI engineer at AMIAD.{' '}
+        <em>Mostly I want to know how things work.</em>
       </p>
       <div class="home__links" data-reveal style="--i:3">
         <a class="btn btn--primary" href="/work/">See my work →</a>
@@ -51,7 +51,12 @@ const key = latest.data.results.find((r) => r.best);
 
     {current.length > 0 && (
       <section class="home__nowsec" aria-labelledby="now-title" data-reveal style="--i:4">
-        <h2 id="now-title" class="label home__nowsec-k">Now</h2>
+        <div class="home__nowsec-top">
+          <h2 id="now-title" class="home__nowsec-k">Now</h2>
+          <div class="home__nowsec-links mono">
+            <a class="arrow-link" href="/path/"><span>More details</span><span>→</span></a>
+          </div>
+        </div>
         <div class="nowsplit">
           {current.map((e, k) => {
             const s0 = e.data.start.getTime(), s1 = e.data.end.getTime();
@@ -62,22 +67,20 @@ const key = latest.data.results.find((r) => r.best);
                 <article class="nowcol" data-start={s0} data-end={s1}>
                   <div class="nowcol__head label">
                     <span class="nowcol__verb">{e.data.kind === 'education' ? 'Studying' : 'Working'}</span>
-                    <span>{e.data.when}</span>
+                    <span>{e.data.when} · {e.data.place}</span>
                   </div>
                   <div class="nowcol__bar" role="progressbar" aria-label="Time elapsed" aria-valuemin="0" aria-valuemax="100" aria-valuenow={Math.round(p * 100)}>
                     <i style={`width:${(p * 100).toFixed(1)}%`} />
                   </div>
-                  <h3>{e.data.org.split(/ — |,/)[0].trim()}</h3>
-                  <p class="nowcol__title">{e.data.title}</p>
-                  <p class="nowcol__meta mono">{[e.data.place, ...(e.data.courses ?? []).slice(0, 4)].join(' · ')}</p>
+                  {(() => { const [, name, full] = e.data.org.split(' — ')[0].trim().match(/^(.*?)(?:\s*\((.*)\))?$/)!; return (
+                    <h3>{name}{full && <span class="nowcol__full"> ({full})</span>}</h3>
+                  ); })()}
+                  <p class="nowcol__title">{e.data.title.replace(/\s*\(IASD\)/, '')}</p>
+                  {e.data.org.includes(' — ') && <p class="nowcol__desc">{e.data.org.split(' — ').slice(1).join(' — ')}</p>}
                 </article>
               </>
             );
           })}
-        </div>
-        <div class="home__nowsec-links mono">
-          <a class="arrow-link" href="/now/"><span>What I'm doing now</span><span>→</span></a>
-          <a class="arrow-link soft" href="/path/"><span>Full path</span><span>→</span></a>
         </div>
       </section>
     )}
@@ -109,6 +112,7 @@ const key = latest.data.results.find((r) => r.best);
     bar?.setAttribute('aria-valuenow', String(Math.round(p * 100)));
     const i = bar?.querySelector<HTMLElement>('i'); if (i) i.style.width = `${(p * 100).toFixed(1)}%`;
   });
+
 </script>
 
 <style>
@@ -139,19 +143,22 @@ const key = latest.data.results.find((r) => r.best);
   .home__now { display: flex; flex-wrap: wrap; gap: .3rem 1.2rem; padding-top: var(--s-4); border-top: var(--hair) solid var(--rule); max-width: 34rem; }
   .home__figure { grid-column: 8 / -1; justify-self: end; width: min(100%, calc(100svh - 21rem)); min-width: 300px; }
 
-  .home__nowsec { grid-column: 1 / -1; padding-top: var(--s-4); border-top: var(--hair) solid var(--ink); display: grid; gap: var(--s-5); }
-  .home__nowsec-k { color: var(--accent); }
-  .nowsplit { display: grid; grid-template-columns: 1fr 1px 1fr; gap: var(--s-7); }
+  .home__nowsec { grid-column: 1 / -1; display: grid; gap: var(--s-4); padding: var(--s-5) var(--s-6); background: color-mix(in srgb, var(--accent) 7%, var(--bg)); border-left: 3px solid var(--accent); border-radius: 0 14px 14px 0; }
+  .home__nowsec-top { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; flex-wrap: wrap; }
+  .home__nowsec-k { font: 500 1.6rem/1 var(--f-display); letter-spacing: -.02em; color: var(--ink); }
+  .home__nowsec-links { display: flex; gap: 1.6rem; }
+  .nowsplit { display: grid; grid-template-columns: 1fr 1px 1fr; gap: var(--s-6); }
   .nowsplit__rule { background: var(--rule); }
-  .nowcol { display: grid; gap: .45rem; align-content: start; }
+  .nowcol { display: grid; gap: .3rem; align-content: start; container-type: inline-size; }
   .nowcol__head { display: flex; justify-content: space-between; gap: 1rem; }
   .nowcol__verb { color: var(--accent); }
-  .nowcol__bar { height: 4px; border-radius: 4px; background: var(--rule); overflow: hidden; margin: .15rem 0 .5rem; }
-  .nowcol__bar i { display: block; height: 100%; border-radius: 4px; background: var(--accent); }
-  .nowcol h3 { font-size: clamp(1.6rem, 1rem + 1.5vw, 2.4rem); font-weight: 500; letter-spacing: -.03em; line-height: 1.05; }
-  .nowcol__title { font-size: var(--t-body); }
-  .nowcol__meta { font-size: .72rem; color: var(--ink-soft); line-height: 1.5; }
-  .home__nowsec-links { display: flex; gap: 1.6rem; }
+  .nowcol__bar { height: 3px; border-radius: 3px; background: var(--rule); overflow: hidden; margin: .1rem 0 .35rem; }
+  .nowcol__bar i { display: block; height: 100%; border-radius: 3px; background: var(--accent); }
+  .nowcol h3 { text-wrap: wrap; font-size: clamp(1.35rem, 1.05rem + .8vw, 1.75rem); font-weight: 500; letter-spacing: -.025em; line-height: 1.1; }
+  .nowcol__full { font-family: var(--f-body); font-size: clamp(1.1rem, .95rem + .5vw, 1.4rem); font-weight: 400; letter-spacing: -.01em; line-height: 1.25; color: var(--ink); }
+  /* the master's title fills its column on one line (its width is ~26 × its font size); both titles share the size */
+  .nowcol__title { font-size: max(.875rem, 3.75cqi); font-weight: 500; line-height: 1.25; letter-spacing: -.005em; }
+  .nowcol__desc { font-size: .82rem; line-height: 1.45; color: var(--ink-soft); }
   .home__latest {
     grid-column: 1 / -1; display: grid; grid-template-columns: subgrid; row-gap: var(--s-4);
     padding-top: var(--s-4); border-top: var(--hair) solid var(--ink); align-items: start;
@@ -179,7 +186,8 @@ const key = latest.data.results.find((r) => r.best);
     .home__intro, .home__figure, .home__latest-body, .home__latest-links { grid-column: 1 / -1; }
     .home__figure { order: 3; width: 100%; min-width: 0; justify-self: stretch; }
     .home__latest { order: 2; display: grid; grid-template-columns: 1fr; }
-    .home__nowsec { order: 2; }
+    .home__nowsec { order: 2; padding: var(--s-5); }
+    .home__nowsec-links { gap: 1.2rem; }
     .nowsplit { grid-template-columns: 1fr; gap: var(--s-5); }
     .nowsplit__rule { height: 1px; }
     .home__latest-links { justify-items: start; display: flex; gap: 1.5rem; }
