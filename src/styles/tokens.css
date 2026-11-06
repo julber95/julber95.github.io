@@ -1,5 +1,5 @@
 /* ───────────────────────────────────────────────
-   Cobalt tokens. Cool white (light) and deep navy (dark).
+   Cobalt tokens. Cool white (light) and charcoal (dark), with a blue accent.
    ─────────────────────────────────────────────── */
 :root {
   --bg: #F4F7FB;
@@ -45,30 +45,30 @@
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']) {
-    --bg: #0A1424;
-    --surface: #101D33;
-    --ink: #E3ECF8;
-    --ink-soft: #8EA2BD;
-    --rule: #1F3050;
+    --bg: #141413;
+    --surface: #1D1D1B;
+    --ink: #EEEDEA;
+    --ink-soft: #A3A19B;
+    --rule: #302F2C;
     --accent: #5B9BFF;
     --grain-opacity: 0;
     --grain-blend: screen;
-    --field-ink: 227 236 248;
+    --field-ink: 238 237 234;
     --field-accent: 91 155 255;
     color-scheme: dark;
   }
 }
 
 :root[data-theme='dark'] {
-  --bg: #0A1424;
-  --surface: #101D33;
-  --ink: #E3ECF8;
-  --ink-soft: #8EA2BD;
-  --rule: #1F3050;
+  --bg: #141413;
+  --surface: #1D1D1B;
+  --ink: #EEEDEA;
+  --ink-soft: #A3A19B;
+  --rule: #302F2C;
   --accent: #5B9BFF;
   --grain-opacity: 0;
   --grain-blend: screen;
-  --field-ink: 227 236 248;
+  --field-ink: 238 237 234;
   --field-accent: 91 155 255;
   color-scheme: dark;
 }

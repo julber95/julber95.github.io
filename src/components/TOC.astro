@@ -62,7 +62,7 @@ const isCurrent = (href: string) => { const h = norm(href); return h === '/' ? p
   const paint = () => {
     const t = current();
     toggle?.setAttribute('aria-pressed', String(t === 'dark'));
-    document.querySelectorAll<HTMLMetaElement>('meta[name="theme-color"]').forEach((m) => (m.content = t === 'dark' ? '#0A1424' : '#F4F7FB'));
+    document.querySelectorAll<HTMLMetaElement>('meta[name="theme-color"]').forEach((m) => (m.content = t === 'dark' ? '#141413' : '#F4F7FB'));
   };
   const flip = () => {
     const next = current() === 'dark' ? 'light' : 'dark';
