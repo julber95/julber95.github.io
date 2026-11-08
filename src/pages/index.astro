@@ -1,8 +1,6 @@
 ---
 import Base from '../layouts/Base.astro';
 import LandscapeFigure from '../components/LandscapeFigure.astro';
-import Kicker from '../components/Kicker.astro';
-import { getPlates, hrefOf } from '../lib/plates';
 import { site } from '../data/site';
 import { existsSync } from 'node:fs';
 import { getCollection } from 'astro:content';
@@ -17,9 +15,6 @@ const current = (await getCollection('log'))
 // resolved from the project root: import.meta.url points elsewhere once the page is bundled for the build
 const portrait = ['portrait.jpeg', 'portrait.jpg'].find((f) => existsSync(`${process.cwd()}/public/${f}`));
 
-// the latest project is the most recent plate
-const latest = (await getPlates()).at(-1)!;
-const key = latest.data.results.find((r) => r.best);
 ---
 <Base person>
   <div class="page home">
@@ -86,21 +81,6 @@ const key = latest.data.results.find((r) => r.best);
       </section>
     )}
 
-    <section class="home__latest" aria-labelledby="latest-title" data-reveal style="--i:4">
-      <div class="home__latest-head">
-        <p class="label"><span class="accent">Latest project</span></p>
-        <Kicker plate={latest} prefix={false} />
-      </div>
-      <div class="home__latest-body">
-        <h2 id="latest-title"><a href={hrefOf(latest)}>{latest.data.title}</a></h2>
-        <p>{latest.data.summary}</p>
-        {key && <p class="home__key mono"><span>{key.label}</span><strong>{key.value}</strong></p>}
-      </div>
-      <div class="home__latest-links mono">
-        <a class="arrow-link" href={hrefOf(latest)}><span>Read the project</span><span>→</span></a>
-        <a class="arrow-link soft" href="/work/"><span>All work</span><span>→</span></a>
-      </div>
-    </section>
   </div>
 </Base>
 
@@ -160,37 +140,18 @@ const key = latest.data.results.find((r) => r.best);
   /* the master's title fills its column on one line (its width is ~26 × its font size); both titles share the size */
   .nowcol__title { font-size: max(.875rem, 3.75cqi); font-weight: 500; line-height: 1.25; letter-spacing: -.005em; }
   .nowcol__desc { font-size: .82rem; line-height: 1.45; color: var(--ink-soft); }
-  .home__latest {
-    grid-column: 1 / -1; display: grid; grid-template-columns: subgrid; row-gap: var(--s-4);
-    padding-top: var(--s-4); border-top: var(--hair) solid var(--ink); align-items: start;
-  }
-  .home__latest-head { grid-column: 1 / span 3; display: grid; gap: .5rem; }
-  .home__latest-body { grid-column: 4 / span 6; display: grid; gap: .6rem; }
-  .home__latest-body h2 { font-size: var(--t-h3); font-weight: 420; line-height: 1.15; }
-  .home__latest-body h2 a { text-decoration: none; }
-  .home__latest-body h2 a:hover { color: var(--accent); }
-  .home__latest-body p { color: var(--ink-soft); max-width: 62ch; font-size: var(--t-small); }
-  .home__latest-body .home__key { font-size: .72rem; color: var(--ink-soft); }
-  .home__key { display: flex; flex-wrap: wrap; column-gap: .4rem; }
-  .home__key strong { color: var(--accent); font-weight: 500; white-space: nowrap; }
-  .home__latest-links { grid-column: 10 / -1; display: grid; gap: .9rem; justify-items: end; padding-top: .3rem; }
-  .home__latest-links .soft { color: var(--ink-soft); }
 
   @media (max-width: 1100px) {
     .home__intro { grid-column: 1 / span 7; }
     .home__figure { grid-column: 8 / -1; justify-self: end; width: min(100%, calc(100svh - 21rem)); min-width: 300px; }
-    .home__latest-head { grid-column: 1 / -1; display: flex; gap: 1rem; flex-wrap: wrap; }
-    .home__latest-body { grid-column: 1 / span 9; }
   }
   @media (max-width: 860px) {
     .home { padding-top: 5.5rem; }
-    .home__intro, .home__figure, .home__latest-body, .home__latest-links { grid-column: 1 / -1; }
+    .home__intro, .home__figure { grid-column: 1 / -1; }
     .home__figure { order: 3; width: 100%; min-width: 0; justify-self: stretch; }
-    .home__latest { order: 2; display: grid; grid-template-columns: 1fr; }
     .home__nowsec { order: 2; padding: var(--s-5); }
     .home__nowsec-links { gap: 1.2rem; }
     .nowsplit { grid-template-columns: 1fr; gap: var(--s-5); }
     .nowsplit__rule { height: 1px; }
-    .home__latest-links { justify-items: start; display: flex; gap: 1.5rem; }
   }
 </style>
