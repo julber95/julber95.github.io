@@ -1,40 +1,23 @@
 ---
 import { site } from '../data/site';
-import { getNotes } from '../lib/notes';
-import { getPlates } from '../lib/plates';
-import { capitalise, numberWord } from '../lib/words';
-const nProjects = capitalise(numberWord((await getPlates()).length));
-const hasNotes = (await getNotes()).some((n) => !n.data.draft);
 const year = new Date().getFullYear();
 ---
-<footer class="colophon page" aria-labelledby="colophon-title">
+<footer class="colophon page" aria-label="Footer">
   <div class="colophon__rule rule" data-draw></div>
   <div class="colophon__grid">
-    <div class="colophon__col colophon__col--title">
-      <p class="label" id="colophon-title">Colophon</p>
-      <p class="colophon__lead">
-        Set in Space Grotesk, IBM Plex Sans and IBM Plex Mono. Engravings drawn in code,
-        one per project. Built with Astro, with no client-side framework and not a single stock image.
-      </p>
+    <div class="colophon__col colophon__col--me">
+      <p class="colophon__name">{site.name}</p>
+      <p class="label">AI / ML student · Paris</p>
     </div>
-    <div class="colophon__col">
-      <p class="label">Correspondence</p>
+    <div class="colophon__col colophon__col--contact">
+      <p class="label">Contact</p>
       <ul role="list" class="colophon__links">
-        <li><a href={`mailto:${site.email}`}>{site.email}</a></li>
-        <li><a href={site.github} rel="me">GitHub <span class="mono soft">/julber95</span></a></li>
+        <li><a href={`mailto:${site.email}`}>Email</a></li>
+        <li><a href={site.github} rel="me">GitHub</a></li>
         <li><a href={site.linkedin} rel="me">LinkedIn</a></li>
-        {hasNotes && <li><a href="/rss.xml">Notes via RSS</a></li>}
-        <li><a href="/cv.pdf">Curriculum vitae <span class="mono soft">(PDF)</span></a></li>
+        <li><a href="/cv.pdf">CV <span class="mono soft">(PDF)</span></a></li>
       </ul>
     </div>
-    <div class="colophon__col">
-      <p class="label">Imprint</p>
-      <p class="mono colophon__imprint">
-        {site.place}<br />
-        First edition, {site.established}{year > site.established ? `; revised ${year}` : ''}.<br />
-        {nProjects} projects<a class="colophon__zero" href="/plate-0/">, and one more<span class="sr-only">: the unlisted page</span></a>.
-      </p>
-      <button class="colophon__errata label" type="button" data-errata-open>Errata <kbd>?</kbd></button>
-    </div>
+    <p class="colophon__copy mono">© {year} {site.name}</p>
   </div>
 </footer>
