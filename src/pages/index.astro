@@ -14,7 +14,8 @@ const current = (await getCollection('log'))
   .sort((a, b) => (a.data.kind === 'education' ? -1 : 1) - (b.data.kind === 'education' ? -1 : 1));
 
 // drop a square photo at public/portrait.jpeg (or .jpg) and it replaces the initials
-const portrait = ['portrait.jpeg', 'portrait.jpg'].find((f) => existsSync(new URL(`../../public/${f}`, import.meta.url)));
+// resolved from the project root: import.meta.url points elsewhere once the page is bundled for the build
+const portrait = ['portrait.jpeg', 'portrait.jpg'].find((f) => existsSync(`${process.cwd()}/public/${f}`));
 
 // the latest project is the most recent plate
 const latest = (await getPlates()).at(-1)!;
