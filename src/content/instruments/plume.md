@@ -10,7 +10,6 @@ summary: >-
   shape recognition (hold the pen still and a wobbly circle becomes a circle). It works offline and keeps
   both versions when a notebook was edited in two places.
 links:
-  - { label: Open Plume, href: 'https://julber95.github.io/plume-notes/' }
   - { label: Repository, href: 'https://github.com/julber95/plume-notes' }
 ---
 
