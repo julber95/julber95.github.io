@@ -13,9 +13,9 @@ abstract: >-
   we flattened 24 item slots into basket-level features and compared four classifiers on
   precision–recall AUC. A gradient-boosted ensemble tuned with randomised search finished
   first on both the public and the private leaderboard.
-engraving: forest
-figCaption: A forest of shallow trees, each correcting the last; the one leaf that flags the rare fraudulent basket is inked in red.
-figAlt: Engraving of a small forest of decision trees drawn in hatched ink, receding in depth; one leaf on the frontmost tree is marked in blue.
+engraving: threshold
+figCaption: "Where to cut. Model scores for legitimate baskets (98.6%) and fraudulent ones (1.4%), and the threshold that separates approved from flagged. Moving it trades false alarms against missed fraud, which is what precision–recall AUC measures. The curve shapes are illustrative."
+figAlt: "Engraving of two score distributions on one axis: a tall hatched curve for legitimate baskets on the left and a small blue stippled curve for fraudulent baskets on the right, divided by a dashed blue threshold line labelled approved and flagged for review."
 links:
   - { label: Repository, href: 'https://github.com/julber95/fraud-detection-ML' }
   - { label: Challenge page, href: 'https://challengedata.ens.fr/participants/challenges/104/' }

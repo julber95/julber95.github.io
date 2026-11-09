@@ -1,0 +1,66 @@
+---
+/* Fraud project: where to cut. Model scores for legitimate baskets (98.6%) and fraudulent ones (1.4%),
+   drawn as two curves, with the decision threshold between "approved" and "flagged".
+   The curve shapes are illustrative; the 1.4% fraud rate is from the project. */
+import Frame from './Frame.astro';
+import { rng, dots, stipple, int, type P } from '../../lib/engrave';
+
+interface Props { uid: string; title: string; desc: string }
+const { uid, title, desc } = Astro.props;
+const R = rng(1414);
+
+const X0 = 64, Y0 = 70, W = 472, H = 262;
+const base = Y0 + H;
+const curve = (mu: number, sd: number, amp: number): P[] =>
+  Array.from({ length: 121 }, (_, i) => {
+    const u = i / 120;
+    return [X0 + u * W, base - amp * Math.exp(-((u - mu) ** 2) / (2 * sd * sd))] as P;
+  });
+const legit = curve(0.22, 0.12, 236);
+const fraud = curve(0.72, 0.14, 50);
+const path = (pts: P[]) => 'M' + pts.map((p) => `${p[0].toFixed(1)} ${p[1].toFixed(1)}`).join('L');
+const area = (pts: P[]) => `${path(pts)}L${X0 + W} ${base}L${X0} ${base}Z`;
+
+// hatching under the legitimate curve, like an engraved fill
+let hatch = '';
+for (let x = X0 + 2; x < X0 + W; x += 5) {
+  const u = (x - X0) / W;
+  const top = base - 236 * Math.exp(-((u - 0.22) ** 2) / (2 * 0.12 * 0.12));
+  if (base - top > 3) hatch += `M${x.toFixed(1)} ${base}L${x.toFixed(1)} ${(top + 1.5).toFixed(1)}`;
+}
+// stipple inside the fraud curve
+const fraudDots = int(dots(stipple(220, { x: X0 + W * 0.4, y: base - 50, w: W * 0.6, h: 50 }, R, (x, y) => {
+  const u = (x - X0) / W;
+  return y > base - 50 * Math.exp(-((u - 0.72) ** 2) / (2 * 0.14 * 0.14)) + 1;
+})));
+
+const TH = X0 + 0.55 * W;
+const ticks = [0, 0.25, 0.5, 0.75, 1].map((v) => `M${(X0 + v * W).toFixed(1)} ${base}v5`).join('');
+---
+<Frame uid={uid} title={title} desc={desc} keyText="shapes illustrative · fraud rate 1.4%">
+  <text class="lbl" x={X0} y="42">model score per basket · legit vs fraud</text>
+
+  <!-- legitimate baskets -->
+  <path class="k w04 faint" d={hatch} />
+  <path class="k w10" d={path(legit)} />
+  <text class="lbl-k" x={X0 + 0.22 * W} y={Y0 + 18} text-anchor="middle">legit baskets · 98.6%</text>
+
+  <!-- fraudulent baskets -->
+  <path class="fa" d={area(fraud)} fill-opacity=".18" />
+  <path class="a w05" d={fraudDots} stroke-linecap="round" />
+  <path class="a w13" d={path(fraud)} />
+  <text class="lbl-a" x={X0 + 0.72 * W} y={base - 60} text-anchor="middle">fraud · 1.4%</text>
+
+  <!-- the threshold -->
+  <path class="a w13" d={`M${TH} ${Y0 - 6}V${base + 6}`} stroke-dasharray="3 3" />
+  <text class="lbl-a" x={TH + 8} y={Y0 + 2}>threshold</text>
+  <text class="lbl-k" x={TH - 8} y={Y0 + 20} text-anchor="end">approved ←</text>
+  <text class="lbl-a" x={TH + 8} y={Y0 + 20}>→ flagged for review</text>
+
+  <!-- axis -->
+  <path class="k w10" d={`M${X0} ${base}H${X0 + W}`} />
+  <path class="k w05" d={ticks} />
+  <text class="lbl" x={X0} y={base + 20}>score 0</text>
+  <text class="lbl" x={X0 + W} y={base + 20} text-anchor="end">1</text>
+  <text class="lbl" x={X0} y={base + 44}>move the cut right: fewer false alarms, more fraud missed · PR-AUC sums up this trade-off</text>
+</Frame>
