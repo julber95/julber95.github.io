@@ -12,9 +12,9 @@ abstract: >-
   The same language model writes differently depending on how you read from it. I trained a two-layer
   LSTM on WikiText-2 and compared greedy decoding, beam search, top-k and nucleus sampling, with BLEU
   and ROUGE scores and with drawings of the decoding process itself.
-engraving: beamtree
-figCaption: A beam search unfolding left to right, from the prompt “Climate change remains one”. Pruned branches fade out and the surviving beam is traced in red. The log-probabilities shown are illustrative.
-figAlt: Engraving of a branching tree growing left to right, each branch labelled with a word; one path through the tree is highlighted in blue.
+engraving: decoders
+figCaption: Four ways to pick the next word. Greedy follows the most likely branch; beam search keeps the three best partial sentences (in blue); top-k rolls a die among a fixed set; nucleus samples within a set that grows and shrinks with the model's confidence. The trees are illustrative.
+figAlt: Engraving in four panels, each a small tree growing left to right. Greedy follows one branch; beam search keeps three branches inside dashed capsules, traced in blue; top-k marks three candidates with a bracket and a die; nucleus marks a bracket whose size changes at each step.
 links:
   - { label: Repository, href: 'https://github.com/julber95/autoregressive-decoding-strategies' }
 resultsCaption: Scores on the prompt “Climate change remains one…”, against the reference sentence. Two prompts in total, so read these as an illustration, not a benchmark.

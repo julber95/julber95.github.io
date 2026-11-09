@@ -1,0 +1,135 @@
+---
+/* Decoding strategies: the four ways to pick the next word, side by side.
+   Greedy follows the most likely branch; beam search keeps the k best partial sentences;
+   top-k rolls a die among a fixed set of k; nucleus samples within a set that grows and shrinks
+   with the model's confidence. Trees are illustrative; beam search is traced in the accent. */
+import Frame from './Frame.astro';
+import { rng, type P } from '../../lib/engrave';
+
+interface Props { uid: string; title: string; desc: string }
+const { uid, title, desc } = Astro.props;
+const R = rng(4404);
+
+const STEPS = 4, DX = 56;
+const curve = (a: P, b: P) => {
+  const mx = a[0] + (b[0] - a[0]) * 0.5;
+  return `M${a[0].toFixed(1)} ${a[1].toFixed(1)}C${mx.toFixed(1)} ${a[1].toFixed(1)},${mx.toFixed(1)} ${b[1].toFixed(1)},${b[0].toFixed(1)} ${b[1].toFixed(1)}`;
+};
+
+interface Edge { d: string; on: boolean; gone: boolean }
+interface Dot { p: P; on: boolean; gone: boolean }
+interface Panel { x: number; y: number; title: string; note: string; edges: Edge[]; dots: Dot[]; marks: string; dice: P[]; counts: { p: P; n: number }[]; hot: boolean }
+
+function panel(x: number, y: number, kind: 'greedy' | 'beam' | 'topk' | 'nucleus'): Panel {
+  const p: Panel = { x, y, title: '', note: '', edges: [], dots: [], marks: '', dice: [], counts: [], hot: kind === 'beam' };
+  const x0 = x + 14, y0 = y + 92;
+  const root: P = [x0, y0];
+  if (kind === 'greedy') {
+    p.title = 'greedy'; p.note = 'always the most likely word';
+    let prev = root;
+    for (let t = 0; t < STEPS; t++) {
+      const cx = x0 + (t + 1) * DX;
+      let next = prev;
+      for (let j = 0; j < 4; j++) {
+        const q: P = [cx, y0 + (j - 1.5) * 22];
+        const on = j === 1;
+        p.edges.push({ d: curve(prev, q), on, gone: !on });
+        p.dots.push({ p: q, on, gone: !on });
+        if (on) next = q;
+      }
+      prev = next;
+    }
+  }
+  if (kind === 'beam') {
+    p.title = 'beam search · k = 3'; p.note = 'keep the k best partial sentences';
+    let layer: P[] = [root];
+    for (let t = 0; t < STEPS; t++) {
+      const cx = x0 + (t + 1) * DX;
+      const cands: { from: P; q: P }[] = [];
+      for (const from of layer) for (let j = 0; j < 3; j++) cands.push({ from, q: [cx, from[1] + (j - 1) * Math.max(14, 34 / (t + 1)) + R.gauss() * 2] });
+      // keep the 3 best, but spread out (an illustration, not a real score)
+      const order = cands.map((c, i) => [Math.abs(c.q[1] - y0 + (t % 2) * 8), i] as const).sort((a, b) => a[0] - b[0]);
+      const picked: number[] = [];
+      for (const [, i] of order) { if (picked.every((k) => Math.abs(cands[k]!.q[1] - cands[i]!.q[1]) > 12)) picked.push(i); if (picked.length === 3) break; }
+      const keep = new Set(picked);
+      const next: P[] = [];
+      cands.forEach((c, i) => {
+        const on = keep.has(i);
+        p.edges.push({ d: curve(c.from, c.q), on, gone: !on });
+        p.dots.push({ p: c.q, on, gone: !on });
+        if (on) next.push(c.q);
+      });
+      const ys = next.map((n) => n[1]);
+      p.marks += `M${cx - 8} ${(Math.min(...ys) - 1).toFixed(1)}a8 8 0 0 1 16 0v${(Math.max(...ys) - Math.min(...ys) + 2).toFixed(1)}a8 8 0 0 1 -16 0z`;
+      layer = next;
+    }
+  }
+  if (kind === 'topk') {
+    p.title = 'top-k · k = 3'; p.note = 'roll a die among the k best';
+    let prev = root;
+    for (let t = 0; t < STEPS; t++) {
+      const cx = x0 + (t + 1) * DX;
+      const pick = [1, 0, 2, 1][t]!;
+      let next = prev;
+      for (let j = 0; j < 5; j++) {
+        const q: P = [cx, y0 + (j - 2) * 16];
+        const inside = j < 3, on = j === pick;
+        p.edges.push({ d: curve(prev, q), on, gone: !inside });
+        p.dots.push({ p: q, on, gone: !inside });
+        if (on) next = q;
+      }
+      p.marks += `M${cx + 7} ${y0 - 36}q5 0 5 5v${32 - 2}q0 5 -5 5`;
+      p.dice.push([cx + 2, y0 - 50]);
+      prev = next;
+    }
+  }
+  if (kind === 'nucleus') {
+    p.title = 'nucleus · p = 0.6'; p.note = 'sample within mass p: the set grows and shrinks';
+    let prev = root;
+    const sizes = [2, 5, 1, 3], picks = [1, 3, 0, 2];
+    for (let t = 0; t < STEPS; t++) {
+      const cx = x0 + (t + 1) * DX;
+      const n = sizes[t]!;
+      let next = prev;
+      for (let j = 0; j < 7; j++) {
+        const q: P = [cx, y0 + (j - 3) * 13];
+        const inside = j < n, on = j === picks[t];
+        p.edges.push({ d: curve(prev, q), on, gone: !inside });
+        p.dots.push({ p: q, on, gone: !inside });
+        if (on) next = q;
+      }
+      p.marks += `M${cx + 7} ${y0 - 42}q4 0 4 4v${(n - 1) * 13}q0 4 -4 4`;
+      p.counts.push({ p: [cx + 2, y0 - 50], n });
+      prev = next;
+    }
+  }
+  return p;
+}
+
+const panels = [panel(36, 46, 'greedy'), panel(312, 46, 'beam'), panel(36, 244, 'topk'), panel(312, 244, 'nucleus')];
+const roots = panels.map((p) => [p.x + 14, p.y + 92] as P);
+const join = (list: string[]) => list.join('');
+// a faint stipple ground under each panel, like the other plates
+const die = (c: P) => {
+  const s = 11;
+  return `M${c[0] - s / 2} ${c[1] - s / 2}h${s}v${s}h${-s}z`;
+};
+const pips = (c: P) => [[-.25, -.25], [0, 0], [.25, .25]].map(([dx, dy]) => [c[0] + dx! * 11, c[1] + dy! * 11] as P);
+---
+<Frame uid={uid} title={title} desc={desc} keyText="illustrative trees · beam search in blue">
+  <path class="k w04 faint" d="M300 34V420M28 230H572" />
+  {panels.map((p) => (
+    <g>
+      <text class={p.hot ? 'lbl-a' : 'lbl-k'} x={p.x} y={p.y}>{p.title.toUpperCase()}</text>
+      <path class="k w04 faint" d={join(p.edges.filter((e) => e.gone).map((e) => e.d))} stroke-dasharray="2 3" />
+      <path class="k w05 mid" d={join(p.edges.filter((e) => !e.gone && !e.on).map((e) => e.d))} />
+      <path class={p.hot ? 'a w13' : 'k w13'} d={join(p.edges.filter((e) => e.on).map((e) => e.d))} />
+      {p.dots.map((d) => <circle class={d.on ? (p.hot ? 'fa' : 'fk') : 'bg'} cx={d.p[0].toFixed(1)} cy={d.p[1].toFixed(1)} r={d.on ? 2.8 : 1.8} stroke="currentColor" stroke-width=".6" stroke-opacity={d.gone ? 0.35 : 1} />)}
+      {p.marks && <path class={p.hot ? 'a w08' : 'k w08'} d={p.marks} stroke-dasharray={p.hot ? '2 3' : undefined} />}
+      {p.dice.map((c) => <g><path class="bg" d={die(c)} /><path class="k w08" d={die(c)} />{pips(c).map((q) => <circle class="fk" cx={q[0].toFixed(1)} cy={q[1].toFixed(1)} r="1.2" />)}</g>)}
+      {p.counts.map((c) => <text class="lbl-k" x={c.p[0]} y={c.p[1]} text-anchor="middle">{c.n}</text>)}
+      <circle class={p.hot ? 'fa' : 'fk'} cx={p.x + 14} cy={p.y + 92} r="3.4" />
+      <text class={p.hot ? 'lbl-a' : 'lbl'} x={p.x} y={p.y + 168}>{p.note}</text>
+    </g>
+  ))}
+</Frame>
