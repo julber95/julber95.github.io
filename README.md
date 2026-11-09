@@ -36,7 +36,7 @@ names the file and the field.
 
 ## Add a project
 
-1. Create `src/content/plates/08-my-project.md`. The number orders the projects; the rest of the name becomes the URL (`/work/my-project/`).
+1. Create `src/content/plates/08-my-project.md`. The number orders the projects; the rest of the name becomes the URL (`/projects/my-project/`).
 2. Copy the front matter of an existing project and fill it in:
    `order` (8), `title`, `label` (short name), `summary` (one line, 155 characters at most), `observed` (year), `period`,
    `domain` (`Generative`, `NLP`, `Medical` or `Tabular`), `team` (`solo` or `team of four`), `stack`, `abstract`,

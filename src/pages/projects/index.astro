@@ -11,12 +11,11 @@ const domains = ['Generative', 'NLP', 'Medical', 'Tabular'] as const;
 const count = (d: string) => plates.filter((p) => p.data.domain === d).length;
 const nWord = numberWord(plates.length);
 ---
-<Base title="Work" description={`${capitalise(nWord)} machine-learning projects taken apart, from GANs and decoding to medical imaging and explainable NLP, plus two tools I built.`}>
+<Base title="Projects" description={`${capitalise(nWord)} machine-learning projects, from GANs and decoding to medical imaging and explainable NLP, plus two tools I built.`}>
   <div class="page page-top work">
     <header class="work__head">
-      <p class="label" data-reveal>Work</p>
-      <h1 data-reveal style="--i:1">Models I have <em>taken apart</em></h1>
-      <p class="work__intro soft" data-reveal style="--i:2">{capitalise(nWord)} projects, newest first: what each model was set to do, how it was built, and what it actually scored.</p>
+      <h1 data-reveal style="--i:1">Projects</h1>
+      <p class="work__intro soft" data-reveal style="--i:2">Here are some of the projects I've worked on: internships, data challenges, academic and personal projects.</p>
     </header>
 
     <div class="work__controls" data-reveal style="--i:3">

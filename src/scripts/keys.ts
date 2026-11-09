@@ -1,5 +1,5 @@
 // Keyboard directions + errata sheet + plate-0 door.
-const routes: Record<string, string> = { i: '/', w: '/work/', p: '/path/', a: '/about/', o: '/now/', n: '/notes/' };
+const routes: Record<string, string> = { i: '/', p: '/projects/', f: '/path/', a: '/about/', o: '/now/', n: '/notes/' };
 
 const dialog = document.querySelector<HTMLDialogElement>('[data-errata]');
 const openErrata = () => { if (dialog && !dialog.open) dialog.showModal(); };

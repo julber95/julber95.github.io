@@ -12,6 +12,16 @@ const hasPublishedNotes = readdirSync(notesDir).some((f) => /\.mdx?$/.test(f) &&
 export default defineConfig({
   site: 'https://julber95.github.io',
   trailingSlash: 'always',
+  redirects: {
+    '/work/': '/projects/',
+    '/work/fraud-detection/': '/projects/fraud-detection/',
+    '/work/house-prices/': '/projects/house-prices/',
+    '/work/gan-drs/': '/projects/gan-drs/',
+    '/work/decoding-strategies/': '/projects/decoding-strategies/',
+    '/work/lymph-node-metastases/': '/projects/lymph-node-metastases/',
+    '/work/aortic-aneurysm-hisa/': '/projects/aortic-aneurysm-hisa/',
+    '/work/interpretable-text-classification/': '/projects/interpretable-text-classification/',
+  },
   integrations: [mdx(), sitemap({ filter: (page) => !page.includes('/plate-0') && !page.includes('/og/') && (hasPublishedNotes || !page.includes('/notes/')) })],
   devToolbar: { enabled: false },
   build: { inlineStylesheets: 'always' },

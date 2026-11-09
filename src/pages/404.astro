@@ -25,7 +25,7 @@ const plates = await getPlates();
       <p class="label">Perhaps you were looking for</p>
       <ul role="list">
         <li><a href="/">The index</a></li>
-        <li><a href="/work/">All work</a></li>
+        <li><a href="/projects/">Projects</a></li>
         {plates.slice(-3).reverse().map((p) => <li><a href={hrefOf(p)}>{p.data.label}</a></li>)}
       </ul>
     </nav>

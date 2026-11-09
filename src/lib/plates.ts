@@ -4,7 +4,7 @@ export type Plate = CollectionEntry<'plates'>;
 
 /** URL slug: the file id without its numeric prefix ("03-gan-drs" → "gan-drs"). */
 export const slugOf = (p: Plate | string) => (typeof p === 'string' ? p : p.id).replace(/^\d+-/, '');
-export const hrefOf = (p: Plate | string) => `/work/${slugOf(p)}/`;
+export const hrefOf = (p: Plate | string) => `/projects/${slugOf(p)}/`;
 
 /** All public plates, chronological (I → VII). */
 export async function getPlates() {
