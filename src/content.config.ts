@@ -17,7 +17,7 @@ const plates = defineCollection({
     team: z.enum(['solo', 'team of four']).optional(),
     stack: z.array(z.string()),
     abstract: z.string(),
-    engraving: z.enum(['forest', 'house', 'digits', 'beamtree', 'lymph', 'aorta', 'roots', 'naftree', 'decoders', 'atlas']),
+    engraving: z.enum(['forest', 'house', 'digits', 'beamtree', 'lymph', 'aorta', 'roots', 'naftree', 'decoders', 'pipeline', 'atlas']),
     figCaption: z.string(),
     figAlt: z.string(),
     links: z.array(link).default([]),

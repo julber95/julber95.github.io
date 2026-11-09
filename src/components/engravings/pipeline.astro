@@ -1,0 +1,85 @@
+---
+/* Real-estate project: the pipeline from raw listings to a price, as a vertical flowchart.
+   Five stages with their technical settings, and a small diagram of each mechanism on the left:
+   gaps in the matrix, label and one-hot encoding, the k-NN imputer, the four models, the boosted trees. */
+import Frame from './Frame.astro';
+import { rng, type P } from '../../lib/engrave';
+
+interface Props { uid: string; title: string; desc: string }
+const { uid, title, desc } = Astro.props;
+const R = rng(2202);
+
+const X = 160, W = 320, H = 52, GAP = 18;
+const stages = [
+  { n: '1', title: 'RAW LISTINGS', l1: '40,000 rows × 27 fields · text, numbers, gaps', l2: 'over 18,000 listings with no energy rating', hot: false },
+  { n: '2', title: 'ENCODE', l1: 'ENERGY, GHG: A–G → 0–6 (label) · TYPE: one-hot', l2: 'CITY: about 8,000 distinct values', hot: false },
+  { n: '3', title: 'IMPUTE · KNNIMPUTER', l1: 'surfaces and room counts from the k nearest listings', l2: 'a complete numeric matrix', hot: false },
+  { n: '4', title: 'COMPARE', l1: 'linear regression · k-NN · random forest · XGBoost', l2: 'XGBoost was the strongest', hot: false },
+  { n: '5', title: 'TUNE · GRIDSEARCHCV', l1: 'n_estimators 1,600 · max_depth 10 · learning_rate 0.04', l2: 'cross-validated', hot: true },
+];
+const Y = (i: number) => 26 + i * (H + GAP);
+
+// 1 · a matrix with gaps
+const cells: { x: number; y: number; miss: boolean }[] = [];
+for (let i = 0; i < 6; i++) for (let j = 0; j < 8; j++) cells.push({ x: 40 + j * 13, y: Y(0) + 6 + i * 7, miss: R.next() < 0.25 });
+
+// 2 · label + one-hot
+const grades = 'ABCDEFG'.split('');
+
+// 3 · k-NN neighbourhood
+const c3: P = [92, Y(2) + 26];
+const cloud: P[] = Array.from({ length: 18 }, () => [c3[0] + (R.next() - 0.5) * 92, c3[1] + (R.next() - 0.5) * 44] as P);
+const near = cloud.slice().sort((a, b) => Math.hypot(a[0] - c3[0], a[1] - c3[1]) - Math.hypot(b[0] - c3[0], b[1] - c3[1])).slice(0, 3);
+
+// 4 · four models
+const models = ['lin', 'kNN', 'RF', 'XGB'];
+
+// 5 · boosted trees (small, in sequence)
+const tree = (x: number, y: number) => `M${x} ${y}l-6 11m6 -11l6 11m-12 0l-3 8m3 -8l3 8m6 -8l-3 8m3 -8l3 8`;
+const trees = [0, 1, 2, 3].map((k) => tree(42 + k * 24, Y(4) + 12)).join('');
+
+const arrow = (x: number, y1: number, y2: number) => `M${x} ${y1}V${y2}M${x - 3} ${y2 - 5}L${x} ${y2}L${x + 3} ${y2 - 5}`;
+const mid = X + W / 2;
+const priceY = Y(4) + H + 22;
+---
+<Frame uid={uid} title={title} desc={desc} keyText="the pipeline, step by step">
+  {stages.map((s, i) => (
+    <g>
+      <rect class={s.hot ? 'a w13' : 'k w08'} x={X} y={Y(i)} width={W} height={H} rx="6" />
+      <circle class="bg" cx={X + 18} cy={Y(i) + 26} r="9" />
+      <circle class={s.hot ? 'a w10' : 'k w08'} cx={X + 18} cy={Y(i) + 26} r="9" />
+      <text class={s.hot ? 'lbl-a' : 'lbl-k'} x={X + 18} y={Y(i) + 29} text-anchor="middle">{s.n}</text>
+      <text class={s.hot ? 'lbl-a' : 'lbl-k'} x={X + 34} y={Y(i) + 18} style="font-size: 9.5px; font-weight: 600">{s.title}</text>
+      <text class="lbl-k" x={X + 34} y={Y(i) + 32} style="font-size: 7.4px">{s.l1}</text>
+      <text class="lbl" x={X + 34} y={Y(i) + 44} style="font-size: 7.2px; text-transform: none">{s.l2}</text>
+      {i < stages.length - 1 && <path class={i === 3 ? 'a w10' : 'k w08'} d={arrow(mid, Y(i) + H, Y(i + 1))} />}
+    </g>
+  ))}
+
+  <!-- side diagrams -->
+  {cells.map((c) => c.miss
+    ? <rect class="k w04" x={c.x} y={c.y} width="11" height="5" stroke-dasharray="1 1.5" />
+    : <rect class="fk" x={c.x} y={c.y} width="11" height="5" fill-opacity=".22" />)}
+  {grades.map((g, i) => <g><text class="lbl-k" x={46 + i * 13} y={Y(1) + 14} text-anchor="middle">{g}</text><text class="lbl-a" x={46 + i * 13} y={Y(1) + 25} text-anchor="middle">{i}</text></g>)}
+  {[0, 1, 2].map((i) => [0, 1, 2].map((j) => <rect class={i === j ? 'fa' : 'k w04'} x={46 + j * 12} y={Y(1) + 32 + i * 7} width="9" height="5" />))}
+  <ellipse class="a w05" cx={c3[0]} cy={c3[1]} rx="30" ry="18" stroke-dasharray="2 3" />
+  {cloud.map((p) => near.includes(p)
+    ? <circle class="fk" cx={p[0].toFixed(1)} cy={p[1].toFixed(1)} r="2.2" />
+    : <circle class="k w05" cx={p[0].toFixed(1)} cy={p[1].toFixed(1)} r="1.4" />)}
+  <path class="a w08" d={near.map((p) => `M${c3[0]} ${c3[1]}L${p[0].toFixed(1)} ${p[1].toFixed(1)}`).join('')} />
+  <circle class="bg" cx={c3[0]} cy={c3[1]} r="3.4" /><circle class="a w13" cx={c3[0]} cy={c3[1]} r="3.4" />
+  {models.map((m, i) => (
+    <g>
+      <rect class={m === 'XGB' ? 'a w10' : 'k w05'} x={34 + i * 30} y={Y(3) + 18} width="26" height="16" rx="3" />
+      <text class={m === 'XGB' ? 'lbl-a' : 'lbl'} x={47 + i * 30} y={Y(3) + 29} text-anchor="middle" style="font-size: 6.5px">{m}</text>
+    </g>
+  ))}
+  <path class="a w08" d={trees} />
+  <text class="lbl-a" x="34" y={Y(4) + 44} style="font-size: 7px">+ … 1,600 trees</text>
+
+  <!-- the price -->
+  <path class="a w10" d={arrow(mid, Y(4) + H, priceY - 2)} />
+  <rect class="fa" x={mid - 60} y={priceY} width="120" height="24" rx="12" fill-opacity=".12" />
+  <rect class="a w10" x={mid - 60} y={priceY} width="120" height="24" rx="12" />
+  <text class="lbl-a" x={mid} y={priceY + 15} text-anchor="middle" style="font-size: 9px; font-weight: 600">PRICE · € ?</text>
+</Frame>

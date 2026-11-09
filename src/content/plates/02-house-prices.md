@@ -12,9 +12,9 @@ abstract: >-
   Forty thousand French property listings, twenty-seven features, and a great deal of missing
   information. We imputed what was missing from nearest neighbours, encoded thousands of cities,
   and tuned a deep XGBoost regressor with grid search.
-engraving: house
-figCaption: A house in cross-section, with its rooms, surfaces and energy rating dimensioned like a surveyor's drawing; only the price is left unmeasured.
-figAlt: Engraving of a two-storey house in cross-section with hatched walls, dimension lines, room labels and an energy-rating scale; a price tag hangs blank.
+engraving: pipeline
+figCaption: The pipeline, step by step. Forty thousand listings with gaps are encoded (energy ratings as labels, property type one-hot), completed by a k-nearest-neighbours imputer, then four regressors are compared and XGBoost is tuned by grid search.
+figAlt: Engraving of a vertical flowchart with five boxes, raw listings, encode, impute, compare and tune, each with its settings, ending in a rounded box marked price. Small diagrams on the left show a matrix with gaps, a grade-to-number table, a nearest-neighbour cloud, four model tags and small trees.
 links:
   - { label: Repository, href: 'https://github.com/julber95/house-price-prediction-ML' }
   - { label: Challenge page, href: 'https://challengedata.ens.fr/participants/challenges/68/' }
