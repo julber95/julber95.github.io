@@ -1,0 +1,138 @@
+---
+/* GAN project: rejection sampling, drawn with real-looking MNIST samples.
+   The target density p (blue) and the envelope M·q from the generator (dashed). Each generated digit
+   is placed at its x and at a random height under the envelope: below p it is kept (inked in blue),
+   above p it is rejected (faint, struck through). Kept samples follow p. Densities are illustrative. */
+import Frame from './Frame.astro';
+import { rng, sampleCurve, wobble, type P } from '../../lib/engrave';
+
+interface Props { uid: string; title: string; desc: string }
+const { uid, title, desc } = Astro.props;
+const R = rng(3303);
+
+// ── digit skeletons, in 28×28 lattice units ──────────────
+const ring = (cx: number, cy: number, rx: number, ry: number, n = 12): P[] =>
+  Array.from({ length: n + 1 }, (_, i) => {
+    const t = (i / n) * Math.PI * 2 - Math.PI / 2;
+    return [cx + Math.cos(t) * rx, cy + Math.sin(t) * ry] as P;
+  });
+const SKEL: P[][][] = [
+  [ring(14, 14, 5.6, 8.6)],
+  [[[12.5, 8], [15.5, 5], [14.8, 14], [14, 23.5]]],
+  [[[8.5, 9], [11, 5.8], [15.5, 5], [19, 7.8], [18.5, 12], [14, 17], [9, 22.5]], [[9, 22.5], [14, 22.3], [20.5, 22.8]]],
+  [[[8.5, 7.2], [13, 5], [18, 6.5], [18.3, 10.5], [13.5, 13.5]], [[13.5, 13.5], [18.8, 16], [19, 20.5], [14, 23.5], [8.2, 21.5]]],
+  [[[12.5, 5], [10, 11], [8, 16.2]], [[8, 16.2], [14, 16], [20.5, 15.6]], [[17.5, 8], [16.8, 16], [16.3, 24]]],
+  [[[19.5, 5.3], [11.5, 5.5]], [[11.5, 5.5], [10.2, 13.2]], [[10.2, 13.2], [15, 11.8], [19, 14.8], [19, 20], [15, 23.5], [8.8, 22]]],
+  [[[17.5, 4.8], [12.5, 8.8], [9.3, 15], [9.6, 20.5], [13, 23.6], [17, 22.2], [18.5, 18], [16, 14.6], [12, 15], [9.6, 18]]],
+  [[[8, 6.2], [20, 6]], [[20, 6], [15.6, 14.5], [12.4, 24]]],
+  [[[14, 13.5], [18, 10.4], [17.6, 6.2], [13.6, 4.8], [10, 6.5], [10.5, 10.5], [14, 13.5], [18.6, 17.6], [17.4, 22.6], [13, 23.8], [9, 21.5], [9.6, 17], [14, 13.5]]],
+  [[[18, 9], [15, 5.5], [11, 6], [9.5, 10], [12, 13], [16, 12], [18, 9]], [[18, 9], [17.5, 15.5], [15.6, 24]]],
+];
+
+
+/** Rasterise a skeleton onto the lattice, then place one jittered dot per inked pixel.
+ *  Coordinates are in half-pixels of the plate (the group is scaled by .5) so int() keeps detail. */
+function specimen(digit: number, mode: string | undefined, PX: number) {
+  const slant = R.gauss() * 0.12 + 0.06, sc = 0.95 + R.next() * 0.1;
+  const ox = R.gauss() * 0.6, oy = R.gauss() * 0.5;
+  let sigma = 0.95 + R.next() * 0.2, gain = 1.15, noise = 0;
+  if (mode === 'blur') { sigma = 1.55; gain = 0.72; noise = 0.025; }
+  if (mode === 'faint') { gain = 0.6; sigma = 1.05; noise = 0.015; }
+  if (mode === 'warp') { sigma = 1.25; noise = 0.03; }
+  const pts: P[] = [];
+  for (const stroke of SKEL[digit]!) {
+    let ctrl = stroke.map(([x, y]) => [14 + (x - 14) * sc - (y - 14) * slant + ox, 14 + (y - 14) * sc + oy] as P);
+    if (mode === 'warp') ctrl = ctrl.map(([x, y]) => [x + Math.sin(y * 0.5) * 2.6 + R.gauss() * 1.4, y + R.gauss() * 1.2] as P);
+    const s = ctrl.length > 2 ? sampleCurve(ctrl, 8) : ctrl;
+    for (let i = 0; i < s.length - 1; i++) {
+      const a = s[i]!, b = s[i + 1]!, n = Math.ceil(Math.hypot(b[0] - a[0], b[1] - a[1]) / 0.3);
+      for (let k = 0; k < n; k++) {
+        if (mode === 'broken' && (i + k * 0.05) % 14 > 8) continue;      // gaps in the stroke
+        pts.push([a[0] + (b[0] - a[0]) * (k / n), a[1] + (b[1] - a[1]) * (k / n)]);
+      }
+    }
+  }
+  let big = '', small = '';
+  let lb: P | null = null, ls: P | null = null;
+  const put = (x: number, y: number, isBig: boolean) => {
+    const q: P = [Math.round(x), Math.round(y)];
+    const last = isBig ? lb : ls;
+    const s = last ? `m${q[0] - last[0]} ${q[1] - last[1]}h0` : `M${q[0]} ${q[1]}h0`;
+    if (isBig) { big += s; lb = q; } else { small += s; ls = q; }
+  };
+  for (let j = 0; j < 28; j++) {
+    for (let i = 0; i < 28; i++) {
+      const cx = i + 0.5, cy = j + 0.5;
+      let d2 = Infinity;
+      for (const p of pts) { const dd = (p[0] - cx) ** 2 + (p[1] - cy) ** 2; if (dd < d2) d2 = dd; }
+      const base = Math.min(1, Math.exp(-d2 / (2 * sigma * sigma)) * gain), v = base + (R.next() < noise ? 0.6 : 0);
+      if (R.next() > v * 1.1) continue;
+      // lattice position (+1 pixel margin), loosely snapped: in half-plate-pixels
+      const x = (cx + 1) * PX * 2 + R.gauss() * 0.28 * PX;
+      const y = (cy + 1) * PX * 2 + R.gauss() * 0.28 * PX;
+      put(x, y, base > 0.5 && mode !== 'faint' && mode !== 'blur');
+    }
+  }
+  return { big, small };
+}
+
+
+// ── densities on [0, 1] (illustrative) ───────────────────
+const g = (x: number, mu: number, sd: number) => Math.exp(-((x - mu) ** 2) / (2 * sd * sd));
+const p = (x: number) => 0.55 * g(x, 0.3, 0.07) + 0.45 * g(x, 0.68, 0.08);   // the data: two modes
+const q = (x: number) => 0.9 * g(x, 0.45, 0.17) + 0.1 * g(x, 0.75, 0.05);    // the generator: one wide hump
+let M = 0;
+for (let i = 0; i <= 200; i++) M = Math.max(M, p(i / 200) / q(i / 200));
+M *= 1.03;
+const X0 = 52, Y0 = 46, W = 496, H = 300, base = Y0 + H;
+let top = 0;
+for (let i = 0; i <= 200; i++) top = Math.max(top, M * q(i / 200));
+const sc = (H - 14) / top;
+const curve = (f: (x: number) => number) =>
+  'M' + Array.from({ length: 161 }, (_, i) => { const x = i / 160; return `${(X0 + x * W).toFixed(1)} ${(base - f(x) * sc).toFixed(1)}`; }).join('L');
+const pArea = `${curve(p)}L${X0 + W} ${base}L${X0} ${base}Z`;
+
+// ── samples: x from q, height uniform under M·q(x) ───────
+const CELL = 26, PX = CELL / 30;
+const samples: { x: number; y: number; d: number; keep: boolean; sp: { big: string; small: string }; strike: string }[] = [];
+const placed: P[] = [];
+let tries = 0;
+while (samples.length < 30 && tries < 4000) {
+  tries++;
+  const u = R.next();
+  if (R.next() > q(u)) continue;                                // u ~ q
+  const h = R.next() * M * q(u);                               // height under the envelope
+  const px = X0 + u * W - CELL / 2, py = base - h * sc - CELL / 2;
+  if (py < Y0 || py + CELL > base + 4) continue;
+  if (placed.some(([a, b]) => Math.abs(a - px) < CELL * 0.9 && Math.abs(b - py) < CELL * 0.9)) continue;
+  placed.push([px, py]);
+  const keep = h < p(u);
+  const d = [7, 2, 1, 0, 4, 8, 3, 9, 5, 6][samples.length % 10]!;
+  const mode = keep ? undefined : (['blur', 'warp', 'faint', 'broken'] as const)[samples.length % 4];
+  const sp = specimen(d, mode, PX);
+  const strike = keep ? '' : wobble([px + 4, py + CELL - 4], [px + CELL - 4, py + 4], R, 0.3, 3);
+  samples.push({ x: px, y: py, d, keep, sp, strike });
+}
+const strikes = samples.map((s) => s.strike).join('');
+const ticks = [0, 0.25, 0.5, 0.75, 1].map((v) => `M${(X0 + v * W).toFixed(1)} ${base}v5`).join('');
+---
+<Frame uid={uid} title={title} desc={desc} keyText="kept under p · rejected above · densities illustrative">
+  <path class="fa" d={pArea} fill-opacity=".08" />
+  <path class="k w08 mid" d={curve((x) => M * q(x))} stroke-dasharray="3 3" />
+  <path class="a w13" d={curve(p)} />
+  <path class="k w10" d={`M${X0} ${base}H${X0 + W}`} />
+  <path class="k w05" d={ticks} />
+
+  {samples.map((s) => (
+    <g transform={`translate(${s.x.toFixed(1)} ${s.y.toFixed(1)}) scale(.5)`}>
+      <path class={s.keep ? 'a' : 'k faint'} d={s.sp.big} stroke-width="2.3" stroke-linecap="round" />
+      <path class={s.keep ? 'a mid' : 'k faint'} d={s.sp.small} stroke-width="1.5" stroke-linecap="round" />
+    </g>
+  ))}
+  <path class="k w10" d={strikes} />
+
+  <text class="lbl-k" x={X0 + 0.86 * W} y={Y0 + 18} text-anchor="middle" style="text-transform: none">M · q(x) · the generator</text>
+  <text class="lbl-a" x={X0 + 0.12 * W} y={base - p(0.3) * sc - 6} text-anchor="middle">p(x) · the data</text>
+  <text class="lbl" x={X0} y={base + 22} style="text-transform: none">keep a sample x with probability p(x) / M·q(x)</text>
+  <text class="lbl" x={X0} y={base + 36} style="text-transform: none">in DRS the ratio p / q is read from the discriminator: D(x) / (1 − D(x))</text>
+</Frame>

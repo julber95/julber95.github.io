@@ -13,9 +13,9 @@ abstract: >-
   rejection sampling uses it as a filter at sampling time. I implemented four successive variants on
   MNIST, from a naive acceptance rule to an adaptive soft truncation of the latent code, and traced how
   each one trades sample quality against diversity.
-engraving: digits
-figCaption: Generated digits as they leave the sampler. Accepted samples are inked; rejected ones are struck through in red. The scores shown are illustrative.
-figAlt: Engraving of a grid of stippled handwritten digits; most are accepted, a few are faint or malformed and crossed out with a blue line.
+engraving: rejection
+figCaption: "Rejection sampling with real-looking MNIST samples. Each generated digit sits at a random height under the generator's envelope M·q(x): below the data density p(x) it is kept, above it is rejected, so the kept digits follow the two humps of the data. In DRS the ratio p/q comes from the discriminator. Densities are illustrative."
+figAlt: "Engraving of two curves over one axis: a dashed wide hump for the generator and a blue two-humped curve for the data. Stippled handwritten digits are scattered under the dashed curve; those below the blue curve are inked in blue, those above it are faint and struck through."
 links:
   - { label: Repository, href: 'https://github.com/julber95/gan-drs-enhancement-DL' }
 resultsCaption: Precision and recall of the generated distribution for each sampling variant (project report).
