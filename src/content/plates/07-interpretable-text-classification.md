@@ -13,9 +13,9 @@ abstract: >-
   one of about 700 codes of the NAF nomenclature. I compared lightweight, explainable architectures for
   this task, from FastText to small transformers with label attention, and built a multi-level model
   that predicts all five levels of the hierarchy jointly. I also tested whether the explanations are faithful.
-engraving: roots
-figCaption: The NAF nomenclature drawn as a root system. Five levels, down to about 700 sub-classes, all fed by one shared stem; the blue root is a single prediction.
-figAlt: Botanical engraving of a root system growing from a short stem labelled encoder, dividing across five labelled depths, with one path from stem to tip inked in blue.
+engraving: naftree
+figCaption: Which words mattered, and where they led. An illustrative company description, words shaded by how much they weighed in the decision, above the five-level NAF tree; the blue branch is the predicted path down to one of about 700 sub-classes.
+figAlt: Engraving of a short French company description with some words highlighted in blue, above a five-level tree whose branches narrow from section to sub-class, with one path traced in blue from the root to a single leaf.
 links:
   - { label: Report & demo, href: 'https://julber95.github.io/interpretable-text-classification/' }
   - { label: Repository, href: 'https://github.com/julber95/interpretable-text-classification' }

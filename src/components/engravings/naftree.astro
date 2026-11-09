@@ -1,0 +1,110 @@
+---
+/* INSEE project: which words mattered, and which branch of the NAF tree they led to.
+   Top: an illustrative company description, words shaded by attribution.
+   Below: the five-level NAF nomenclature as a tree, with the predicted path traced in the accent. */
+import Frame from './Frame.astro';
+import { rng, line, taper, dots, stipple, int, type P } from '../../lib/engrave';
+
+interface Props { uid: string; title: string; desc: string }
+const { uid, title, desc } = Astro.props;
+const R = rng(7107);
+
+// ── the sentence (illustrative input), words shaded by attribution ─────────
+const WORDS: [string, number][] = [
+  ['Boulangerie', 0.9], ['artisanale', 0.5], [':', 0], ['fabrication', 0.65], ['de', 0.04],
+  ['pain', 0.95], ['et', 0.04], ['de', 0.04], ['viennoiseries', 0.55],
+];
+const FS = 19, CW = FS * 0.455, LH = FS * 1.75, X0 = 60, MAXW = 480;
+const words: { w: string; a: number; x: number; y: number; tw: number }[] = [];
+{
+  let x = X0, y = 70;
+  for (const [w, a] of WORDS) {
+    const tw = w.length * CW;
+    if (x + tw > X0 + MAXW) { x = X0; y += LH; }
+    words.push({ w, a, x, y, tw });
+    x += tw + FS * 0.6;
+  }
+}
+const sentenceEnd = words[words.length - 1]!.y;
+
+// ── the tree: section → division → group → class → sub-class ───────────────
+const TOP = 150, DY = 58, LEFT = 60, W = 480;
+const FAN = [4, 3, 3, 2];                    // children per node at each step
+interface Node { p: P; level: number; kids: Node[]; pts?: P[] }
+const root: Node = { p: [LEFT + W / 2, TOP], level: 0, kids: [] };
+let leaves: Node[] = [root];
+for (let l = 0; l < FAN.length; l++) {
+  const next: Node[] = [];
+  const span = W / leaves.length;
+  leaves.forEach((n, pi) => {
+    for (let j = 0; j < FAN[l]!; j++) {
+      const x = LEFT + (pi + (j + 0.5) / FAN[l]!) * span + R.gauss() * span * 0.04;
+      const kid: Node = { p: [x, TOP + (l + 1) * DY + R.gauss() * 1.5], level: l + 1, kids: [] };
+      const a = n.p, b = kid.p;
+      // a cubic bezier, sampled: leaves the parent vertically, arrives at the child vertically
+      const c1: P = [a[0], a[1] + DY * 0.55], c2: P = [b[0], b[1] - DY * 0.55];
+      kid.pts = Array.from({ length: 13 }, (_, i) => {
+        const t = i / 12, u = 1 - t;
+        return [u * u * u * a[0] + 3 * u * u * t * c1[0] + 3 * u * t * t * c2[0] + t * t * t * b[0],
+                u * u * u * a[1] + 3 * u * u * t * c1[1] + 3 * u * t * t * c2[1] + t * t * t * b[1]] as P;
+      });
+      n.kids.push(kid);
+      next.push(kid);
+    }
+  });
+  leaves = next;
+}
+const WIDTH = [0, 2.2, 1.4, 0.9, 0.6, 0.3];
+const byLevel = ['', '', '', '', ''];
+(function walk(n: Node) {
+  for (const k of n.kids) {
+    byLevel[k.level - 1] += k.level <= 2 ? taper(k.pts!, WIDTH[k.level]!, WIDTH[k.level + 1]!) : line(k.pts!);
+    walk(k);
+  }
+})(root);
+const nodeDots = int(dots(leaves.map((n) => n.p)));
+const midDots: P[] = [];
+(function walk(n: Node) { if (n.level > 0 && n.level < 4) midDots.push(n.p); n.kids.forEach(walk); })(root);
+
+// the predicted path: one chain down to a single sub-class
+const chain: Node[] = [];
+{
+  let n = root;
+  for (const c of [2, 0, 1, 1]) { n = n.kids[Math.min(c, n.kids.length - 1)]!; chain.push(n); }
+}
+const chainD = chain.map((n) => line(n.pts!)).join('');
+const tip = chain[chain.length - 1]!.p;
+
+// a little stipple under the leaves, like the ground of a plate
+const ground = int(dots(stipple(160, { x: 30, y: TOP + 4 * DY + 6, w: 540, h: 26 }, R, () => true, (_x, y) => 1 - (y - (TOP + 4 * DY)) / 34)));
+const LEVELS = ['sec', 'div', 'grp', 'cls', 'sub'];
+---
+<Frame uid={uid} title={title} desc={desc} keyText="illustrative input · predicted branch in blue">
+  <!-- the description, words shaded by attribution -->
+  <text class="lbl" x={X0} y="40">input · which words mattered</text>
+  {words.filter((w) => w.a > 0.1).map((w) => (
+    <rect class="fa" x={(w.x - 2).toFixed(1)} y={(w.y - FS * 1.02).toFixed(1)} width={(w.tw + 4).toFixed(1)} height={(FS * 1.42).toFixed(1)} rx="2" fill-opacity={(w.a * 0.42).toFixed(2)} />
+  ))}
+  {words.map((w) => (
+    <text x={w.x.toFixed(1)} y={w.y.toFixed(1)} style={`font-family: var(--f-body, Georgia, serif); font-style: italic; font-size: ${FS}px`} fill="currentColor">{w.w}</text>
+  ))}
+
+  <!-- from the words into the tree -->
+  <path class="a w13" d={`M${LEFT + W / 2} ${sentenceEnd + 16}V${TOP}`} stroke-dasharray="1.5 4" />
+
+  <!-- the nomenclature -->
+  <path class="k w05 faint" d={ground} stroke-linecap="round" />
+  <path class="fk" d={byLevel[0]} />
+  <path class="fk" d={byLevel[1]} />
+  <path class="k w08 mid" d={byLevel[2]} />
+  <path class="k w05 mid" d={byLevel[3]} />
+  <path class="k w10" d={nodeDots} stroke-linecap="round" />
+  <path class="k w18" d={int(dots(midDots))} stroke-linecap="round" />
+  {LEVELS.map((l, i) => <text class="lbl" x="22" y={TOP + i * DY + 3}>{l}</text>)}
+
+  <!-- the predicted branch -->
+  <path class="a w18" d={chainD} />
+  {chain.map((n) => <circle class="fa" cx={n.p[0].toFixed(1)} cy={n.p[1].toFixed(1)} r="3" />)}
+  <circle class="fa" cx={root.p[0]} cy={root.p[1]} r="3.4" />
+  <text class="lbl-a" x={tip[0] + 8} y={tip[1] + 14}>10.71C · bakery</text>
+</Frame>
