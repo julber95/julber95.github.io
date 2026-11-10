@@ -9,10 +9,10 @@ const plates = await getPlates();
 const rendered = await Promise.all(entries.map(async (e) => ({ e, Content: (await render(e)).Content, hasBody: !!e.body?.trim() })));
 const now = new Date();
 ---
-<Base title="Field Log" description="Education and work, from Paris-Dauphine to Université PSL, INSEE and AMIAD.">
+<Base title="Background" description="Education and work, from Paris-Dauphine to Université PSL, INSEE and AMIAD.">
   <div class="page page-top log">
     <header class="log__head">
-      <p class="label" data-reveal>Field Log</p>
+      <p class="label" data-reveal>Background</p>
       <h1 data-reveal style="--i:1">Education <em>&amp; work</em></h1>
       <p class="log__intro soft" data-reveal style="--i:2">
         Studies and field work, most recent first, with the projects made along the way.

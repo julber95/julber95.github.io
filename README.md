@@ -20,7 +20,7 @@ npm run preview   # serves dist/
 |---|---|
 | Projects | `src/content/plates/NN-slug.md` |
 | Appendices (tools you built) | `src/content/instruments/*.md` |
-| Field Log (education and experience) | `src/content/log/*.md` |
+| Background (education and experience) | `src/content/log/*.md` |
 | Notes (writing, RSS) | `src/content/notes/*.md` |
 | Now page | `src/content/now.md` |
 | About essay | `src/content/about.md` |

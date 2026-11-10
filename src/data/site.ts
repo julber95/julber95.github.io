@@ -19,7 +19,7 @@ export const site = {
 export const nav = [
   { href: '/', label: 'Index', key: 'i' },
   { href: '/projects/', label: 'Projects', key: 'p' },
-  { href: '/path/', label: 'Field Log', key: 'f' },
+  { href: '/path/', label: 'Background', key: 'b' },
   { href: '/about/', label: 'About', key: 'a' },
   { href: '/now/', label: 'Now', key: 'o' },
   { href: '/notes/', label: 'Notes', key: 'n' },

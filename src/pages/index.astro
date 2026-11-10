@@ -5,7 +5,7 @@ import { site } from '../data/site';
 import { existsSync } from 'node:fs';
 import { getCollection } from 'astro:content';
 
-// "Now": the study and the job that are current today, straight from the Field Log
+// "Now": the study and the job that are current today, straight from the Background entries
 const today = new Date();
 const current = (await getCollection('log'))
   .filter((e) => e.data.start <= today && (!e.data.end || e.data.end >= today))
