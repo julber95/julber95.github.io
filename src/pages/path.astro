@@ -1,18 +1,15 @@
 ---
 import { getCollection, render } from 'astro:content';
 import Base from '../layouts/Base.astro';
-import { getPlates, hrefOf } from '../lib/plates';
 import { site } from '../data/site';
 
 const entries = (await getCollection('log')).sort((a, b) => b.data.start.getTime() - a.data.start.getTime());
-const plates = await getPlates();
 const now = new Date();
 const rendered = await Promise.all(entries.map(async (e) => ({
   e,
   Content: (await render(e)).Content,
   hasBody: !!e.body?.trim(),
   current: e.data.start <= now && e.data.end >= now,
-  linked: e.data.plates.map((r) => plates.find((p) => p.id === r.id)).filter(Boolean),
 })));
 // two columns: studies and work
 const columns = [
@@ -49,7 +46,7 @@ const splitOrg = (org: string) => {
       {columns.map((col) => (
         <section class="cv__col" aria-labelledby={`cv-${col.key}`}>
           <h2 class="cv__h" id={`cv-${col.key}`}>{col.title} <span class="cv__n">{col.items.length}</span></h2>
-          {col.items.map(({ e, Content, hasBody, current, linked }, i) => {
+          {col.items.map(({ e, Content, hasBody, current }, i) => {
             const d = e.data;
             const org = splitOrg(d.org);
             return (
@@ -73,14 +70,6 @@ const splitOrg = (org: string) => {
                     <div class="cv__block">
                       <p class="label">Coursework</p>
                       <ul class="cv__chips" role="list">{d.courses.map((c) => <li>{c}</li>)}</ul>
-                    </div>
-                  )}
-                  {linked.length > 0 && (
-                    <div class="cv__block">
-                      <p class="label">Projects</p>
-                      <ul class="cv__chips cv__chips--proj" role="list">
-                        {linked.map((p) => <li><a href={hrefOf(p!)}>{p!.data.label} →</a></li>)}
-                      </ul>
                     </div>
                   )}
                 </div>
@@ -137,9 +126,6 @@ const splitOrg = (org: string) => {
   .cv__block { display: grid; gap: .55rem; }
   .cv__chips { display: flex; flex-wrap: wrap; gap: .45rem; }
   .cv__chips li { font: 400 .76rem/1 var(--f-mono); padding: .5rem .7rem; border: var(--hair) solid var(--rule); border-radius: 999px; background: var(--surface); }
-  .cv__chips--proj li { padding: 0; border-color: var(--accent); background: transparent; }
-  .cv__chips--proj a { display: block; padding: .5rem .7rem; color: var(--accent); text-decoration: none; }
-  .cv__chips--proj a:hover { background: color-mix(in srgb, var(--accent) 10%, transparent); border-radius: 999px; }
 
   .bg__lang { grid-column: 1 / span 6; margin-top: var(--s-8); padding-top: var(--s-5); border-top: var(--hair) solid var(--ink); display: grid; gap: .5rem; }
   .bg__lang p { font-family: var(--f-display); font-size: 1.25rem; }
