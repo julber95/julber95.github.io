@@ -13,6 +13,7 @@ export default defineConfig({
   site: 'https://julber95.github.io',
   trailingSlash: 'always',
   redirects: {
+    '/path/': '/background/',
     '/work/': '/projects/',
     '/work/fraud-detection/': '/projects/fraud-detection/',
     '/work/house-prices/': '/projects/house-prices/',

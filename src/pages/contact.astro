@@ -1,0 +1,83 @@
+---
+import Base from '../layouts/Base.astro';
+import { site } from '../data/site';
+
+const channels = [
+  { label: 'Email', value: site.email, href: `mailto:${site.email}`, note: 'Best way to reach me.' },
+  { label: 'LinkedIn', value: site.linkedin.replace('https://www.', ''), href: site.linkedin, note: 'Career, internships, roles.' },
+  { label: 'GitHub', value: site.github.replace('https://', ''), href: site.github, note: 'Code, issues, collaborations.' },
+];
+---
+<Base person title="Contact" description="How to get in touch with Julien Bernardi: email, LinkedIn, GitHub.">
+  <div class="page page-top contact">
+    <header class="contact__head">
+      <p class="label" data-reveal>Contact</p>
+      <h1 data-reveal style="--i:1">Get in <em>touch</em></h1>
+      <p class="contact__lede" data-reveal style="--i:2">
+        For research, internships, projects or just a question about something on this site, write to me.
+      </p>
+    </header>
+
+    <dl class="contact__list" data-reveal style="--i:3">
+      {channels.map((c) => (
+        <div class="contact__row">
+          <dt>{c.label}</dt>
+          <dd>
+            <a href={c.href} rel={c.label === 'Email' ? undefined : 'me'}>{c.value}</a>
+            <span class="contact__note">{c.note}</span>
+          </dd>
+          {c.label === 'Email' && (
+            <button type="button" class="contact__copy mono" data-copy={site.email}>Copy</button>
+          )}
+        </div>
+      ))}
+    </dl>
+
+    <aside class="contact__margin mono" data-reveal style="--i:4">
+      <dl>
+        <div><dt>Based in</dt><dd>{site.place}</dd></div>
+        <div><dt>Languages</dt><dd>French, English</dd></div>
+      </dl>
+    </aside>
+  </div>
+</Base>
+
+<script>
+  document.querySelectorAll<HTMLButtonElement>('[data-copy]').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(btn.dataset.copy!);
+        btn.textContent = 'Copied';
+      } catch {
+        btn.textContent = 'Press Ctrl+C';
+      }
+      setTimeout(() => { btn.textContent = 'Copy'; }, 1600);
+    });
+  });
+</script>
+
+<style>
+  .contact__head { grid-column: 1 / span 8; margin-bottom: var(--s-7); display: grid; gap: var(--s-4); }
+  .contact__head h1 { font-size: clamp(2.4rem, 1.5rem + 3vw, 4.6rem); font-weight: 500; letter-spacing: -0.03em; }
+  .contact__lede { font-size: 1.08em; max-width: 46ch; color: var(--ink-soft); }
+
+  .contact__list { grid-column: 1 / span 7; border-top: var(--hair) solid var(--ink); }
+  .contact__row { display: grid; grid-template-columns: 8rem 1fr auto; gap: 1rem; padding-block: 1rem; border-bottom: var(--hair) solid var(--rule); align-items: baseline; }
+  .contact__row dt { font: 400 .7rem/1.4 var(--f-mono); text-transform: uppercase; letter-spacing: .1em; color: var(--ink-soft); }
+  .contact__row dd { display: grid; gap: .25rem; min-width: 0; }
+  .contact__row a { font-size: 1.1em; text-decoration-color: var(--accent); overflow-wrap: anywhere; }
+  .contact__note { font-size: var(--t-small); color: var(--ink-soft); }
+  .contact__copy { font-size: .68rem; text-transform: uppercase; letter-spacing: .1em; background: none; border: var(--hair) solid var(--rule); color: var(--ink); padding: .3rem .6rem; cursor: pointer; }
+  .contact__copy:hover { border-color: var(--accent); color: var(--accent); }
+
+  .contact__margin { grid-column: 9 / -1; font-size: .75rem; }
+  .contact__margin dl { display: grid; gap: 1rem; padding-top: .8rem; border-top: var(--hair) solid var(--ink); }
+  .contact__margin dt { text-transform: uppercase; letter-spacing: .1em; color: var(--ink-soft); font-size: .66rem; margin-bottom: .2rem; }
+
+  @media (max-width: 860px) {
+    .contact__head, .contact__list, .contact__margin { grid-column: 1 / -1; }
+    .contact__margin { margin-top: var(--s-6); }
+    .contact__row { grid-template-columns: 1fr auto; }
+    .contact__row dt { grid-column: 1 / -1; }
+  }
+</style>
