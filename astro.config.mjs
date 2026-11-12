@@ -14,6 +14,7 @@ export default defineConfig({
   trailingSlash: 'always',
   redirects: {
     '/path/': '/background/',
+    '/now/': '/background/',
     '/work/': '/projects/',
     '/work/fraud-detection/': '/projects/fraud-detection/',
     '/work/house-prices/': '/projects/house-prices/',

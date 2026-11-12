@@ -22,14 +22,13 @@ npm run preview   # serves dist/
 | Appendices (tools you built) | `src/content/instruments/*.md` |
 | Background (education and experience) | `src/content/log/*.md` |
 | Notes (writing, RSS) | `src/content/notes/*.md` |
-| Now page | `src/content/now.md` |
 | About essay | `src/content/about.md` |
 | Index of Instruments (skills) | `src/data/skills.ts` |
 | Name, links, status line | `src/data/site.ts` |
 | Homepage loss landscape (one basin per section) | `src/data/landscape.ts` (drawn by `src/scripts/landscape3d.ts`, 2D fallback `src/scripts/landscape.ts`) |
 | Engravings | `src/components/engravings/*.astro` (style guide: `docs/ENGRAVING-STYLE.md`) |
 | Colours, type scale, spacing | `src/styles/tokens.css` |
-| CV | `public/cv.pdf` (replace the placeholder with your PDF, same name) |
+| CV | `public/cv-en.pdf` and `public/cv-fr.pdf` (replace with the same names) |
 
 Every front-matter field is validated by the schemas in `src/content.config.ts`. If you make a typo, the build stops and
 names the file and the field.

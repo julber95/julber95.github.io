@@ -72,14 +72,9 @@ const notes = defineCollection({
   }),
 });
 
-const now = defineCollection({
-  loader: glob({ pattern: 'now.md', base: './src/content' }),
-  schema: z.object({ updated: z.coerce.date(), place: z.string().optional() }),
-});
-
 const pages = defineCollection({
   loader: glob({ pattern: 'about.md', base: './src/content' }),
   schema: z.object({ title: z.string(), lede: z.string() }),
 });
 
-export const collections = { plates, instruments, log, notes, now, pages };
+export const collections = { plates, instruments, log, notes, pages };
