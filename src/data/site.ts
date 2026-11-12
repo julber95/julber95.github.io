@@ -6,7 +6,7 @@ export const site = {
   url: 'https://julber95.github.io',
   email: 'julien.bernardi-pellegrino@dauphine.eu',
   github: 'https://github.com/julber95',
-  linkedin: 'https://www.linkedin.com/in/julien-bernardi-746140252/',
+  linkedin: 'https://www.linkedin.com/in/julien-bernardi/',
   place: 'Paris region, France',
   coords: '48.85°N 2.35°E',
   status: [
