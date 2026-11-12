@@ -1,0 +1,24 @@
+---
+import { getEntry, render } from 'astro:content';
+import Base from '../layouts/Base.astro';
+import { langOf, tr } from '../i18n/ui';
+
+const lang = langOf(Astro.url);
+const L = <T,>(en: T, fr: T) => tr(lang, { en, fr });
+const entry = (await getEntry('pages', lang === 'fr' ? 'fr/about' : 'about'))!;
+const { Content } = await render(entry);
+---
+<Base person title={L('About', 'À propos')} description={L('Why I am passionate about machine learning: its potential in health, explainable models, and a field in constant evolution.', 'Pourquoi le machine learning me passionne : son potentiel en santé, les modèles explicables, et un domaine en constante évolution.')}>
+  <div class="page page-top about">
+    <h1 class="about__h" data-reveal>{L('About', 'À propos')}</h1>
+    <div class="about__essay prose" data-reveal style="--i:1">
+      <Content />
+    </div>
+  </div>
+</Base>
+
+<style>
+  .about__h { grid-column: 1 / span 8; margin-bottom: var(--s-7); font-size: clamp(2.4rem, 1.5rem + 3vw, 4.6rem); font-weight: 500; letter-spacing: -0.03em; }
+  .about__essay { grid-column: 1 / span 7; font-size: 1.12em; }
+  @media (max-width: 860px) { .about__h, .about__essay { grid-column: 1 / -1; } }
+</style>

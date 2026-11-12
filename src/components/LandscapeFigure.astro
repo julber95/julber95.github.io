@@ -3,18 +3,25 @@ import { basins as allBasins, ballStart } from '../data/landscape';
 import { getPlates } from '../lib/plates';
 import { hasPublishedNotes } from '../lib/notes';
 import { capitalise, numberWord } from '../lib/words';
+import { langOf, localize, tr } from '../i18n/ui';
 
-const n = (await getPlates()).length;
+const lang = langOf(Astro.url);
+const L = <T,>(en: T, fr: T) => tr(lang, { en, fr });
+const n = (await getPlates(lang)).length;
 const showNotes = await hasPublishedNotes();
 const basins = allBasins
   .filter((b) => b.key !== 'notes' || showNotes)
-  .map((b) => ({ ...b, caption: b.caption.replace('{n}', capitalise(numberWord(n))) }));
+  .map(({ fr, ...b }) => {
+    const s = lang === 'fr' ? fr : b;
+    return { ...b, href: localize(b.href, lang), label: s.label, caption: s.caption.replace('{n}', capitalise(numberWord(n, lang))) };
+  });
+const settled = L('Settled in <em>{x}</em>. Opening…', 'Arrêtée dans <em>{x}</em>. Ouverture…');
 ---
-<figure class="lf" data-landscape={JSON.stringify({ basins, ball: ballStart })}>
+<figure class="lf" data-landscape={JSON.stringify({ basins, ball: ballStart, settled })}>
   <div class="lf__frame">
     <div class="lf__plate">
       <canvas aria-hidden="true"></canvas>
-      <ul class="lf__labels" role="list" aria-label="Sections of the site">
+      <ul class="lf__labels" role="list" aria-label={L('Sections of the site', 'Rubriques du site')}>
         {basins.map((b) => (
           <li>
             <a class="lf__label" href={b.href} data-basin={b.key}
@@ -24,13 +31,13 @@ const basins = allBasins
           </li>
         ))}
       </ul>
-      <button class="lf__ball" type="button" data-ball aria-label="Let the ball roll into the nearest section"
+      <button class="lf__ball" type="button" data-ball aria-label={L('Let the ball roll into the nearest section', 'Laisser la bille rouler vers la rubrique la plus proche')}
               style={`left:${ballStart[0] * 100}%;top:${ballStart[1] * 100}%`}></button>
       <span class="lf__hint mono" data-hint aria-hidden="true"
-            style={`left:${ballStart[0] * 100}%;top:${ballStart[1] * 100}%`}>← drag me</span>
+            style={`left:${ballStart[0] * 100}%;top:${ballStart[1] * 100}%`}>{L('← drag me', '← faites-moi glisser')}</span>
     </div>
   </div>
-  <figcaption class="lf__cap mono" data-caption><span class="lf__js">Drag the ball into a section, or pick a label.</span><span class="lf__nojs">Pick a section.</span></figcaption>
+  <figcaption class="lf__cap mono" data-caption><span class="lf__js">{L('Drag the ball into a section, or pick a label.', 'Faites glisser la bille vers une rubrique, ou choisissez une étiquette.')}</span><span class="lf__nojs">{L('Pick a section.', 'Choisissez une rubrique.')}</span></figcaption>
 </figure>
 
 <script>

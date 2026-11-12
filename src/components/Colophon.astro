@@ -1,22 +1,29 @@
 ---
 import { site } from '../data/site';
+import { langOf, t } from '../i18n/ui';
+const lang = langOf(Astro.url);
 const year = new Date().getFullYear();
+// the CV in the page's language comes first
+const cvs = [
+  { href: '/cv-en.pdf', tag: 'EN', hreflang: 'en' },
+  { href: '/cv-fr.pdf', tag: 'FR', hreflang: 'fr' },
+];
+if (lang === 'fr') cvs.reverse();
 ---
-<footer class="colophon page" aria-label="Footer">
+<footer class="colophon page" aria-label={lang === 'fr' ? 'Pied de page' : 'Footer'}>
   <div class="colophon__rule rule" data-draw></div>
   <div class="colophon__grid">
     <div class="colophon__col colophon__col--me">
       <p class="colophon__name">{site.name}</p>
-      <p class="label">AI / ML student · Paris</p>
+      <p class="label">{t(lang, 'kicker')}</p>
     </div>
     <div class="colophon__col colophon__col--contact">
-      <p class="label">Contact</p>
+      <p class="label">{t(lang, 'contact')}</p>
       <ul role="list" class="colophon__links">
-        <li><a href={`mailto:${site.email}`}>Email</a></li>
+        <li><a href={`mailto:${site.email}`}>{lang === 'fr' ? 'E-mail' : 'Email'}</a></li>
         <li><a href={site.github} rel="me">GitHub</a></li>
         <li><a href={site.linkedin} rel="me">LinkedIn</a></li>
-        <li><a href="/cv-en.pdf">CV <span class="mono soft">(EN)</span></a></li>
-        <li><a href="/cv-fr.pdf" hreflang="fr">CV <span class="mono soft">(FR)</span></a></li>
+        {cvs.map((c) => <li><a href={c.href} hreflang={c.hreflang}>CV <span class="mono soft">({c.tag})</span></a></li>)}
       </ul>
     </div>
     <p class="colophon__copy mono">© {year} {site.name}</p>

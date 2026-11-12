@@ -1,8 +1,10 @@
 ---
 import type { Plate } from '../lib/plates';
+import { langOf, t, type Key } from '../i18n/ui';
 interface Props { plate: Plate; withTeam?: boolean; prefix?: boolean }
 const { plate, withTeam = false, prefix = true } = Astro.props;
+const lang = langOf(Astro.url);
 const d = plate.data;
-const parts = [...(prefix ? ['Project'] : []), d.domain, String(d.observed), ...(withTeam && d.team ? [d.team] : [])];
+const parts = [...(prefix ? [t(lang, 'project')] : []), t(lang, `dom.${d.domain}` as Key), String(d.observed), ...(withTeam && d.team ? [t(lang, `team.${d.team}` as Key)] : [])];
 ---
 <p class="kicker label">{parts.join(' · ')}</p>

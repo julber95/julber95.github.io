@@ -24,7 +24,7 @@ export default defineConfig({
     '/work/aortic-aneurysm-hisa/': '/projects/aortic-aneurysm-hisa/',
     '/work/interpretable-text-classification/': '/projects/interpretable-text-classification/',
   },
-  integrations: [mdx(), sitemap({ filter: (page) => !page.includes('/plate-0') && !page.includes('/og/') && (hasPublishedNotes || !page.includes('/notes/')) })],
+  integrations: [mdx(), sitemap({ i18n: { defaultLocale: 'en', locales: { en: 'en', fr: 'fr' } }, filter: (page) => !page.includes('/plate-0') && !page.includes('/og/') && (hasPublishedNotes || !page.includes('/notes/')) })],
   devToolbar: { enabled: false },
   build: { inlineStylesheets: 'always' },
 });

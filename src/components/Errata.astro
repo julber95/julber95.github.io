@@ -1,39 +1,41 @@
 ---
 import { hasPublishedNotes } from '../lib/notes';
+import { langOf, tr } from '../i18n/ui';
 const notes = await hasPublishedNotes();
+const lang = langOf(Astro.url);
+const L = <T,>(en: T, fr: T) => tr(lang, { en, fr });
 ---
 <dialog class="errata" data-errata aria-labelledby="errata-title">
   <div class="errata__inner">
     <header class="errata__head">
-      <p class="label">Small print</p>
-      <h2 id="errata-title" class="errata__title">Keyboard <em>&amp; errata</em></h2>
+      <p class="label">{L('Small print', 'Petits caractères')}</p>
+      <h2 id="errata-title" class="errata__title">{L('Keyboard', 'Clavier')} <em>&amp; errata</em></h2>
     </header>
 
     <dl class="errata__keys">
-      <div><dt><kbd>g</kbd> <kbd>i</kbd></dt><dd>Go to the index</dd></div>
-      <div><dt><kbd>g</kbd> <kbd>p</kbd></dt><dd>Go to projects</dd></div>
-      <div><dt><kbd>g</kbd> <kbd>b</kbd></dt><dd>Go to background</dd></div>
-      <div><dt><kbd>g</kbd> <kbd>a</kbd></dt><dd>Go to about</dd></div>
-      {notes && <div><dt><kbd>g</kbd> <kbd>n</kbd></dt><dd>Go to notes</dd></div>}
-      <div><dt><kbd>g</kbd> <kbd>c</kbd></dt><dd>Go to contact</dd></div>
-      <div><dt><kbd>t</kbd></dt><dd>Light / dark mode</dd></div>
-      <div><dt><kbd>[</kbd> <kbd>]</kbd></dt><dd>Previous / next project</dd></div>
-      <div><dt><kbd>?</kbd></dt><dd>This sheet</dd></div>
+      <div><dt><kbd>g</kbd> <kbd>i</kbd></dt><dd>{L('Go to the index', 'Aller à l’accueil')}</dd></div>
+      <div><dt><kbd>g</kbd> <kbd>p</kbd></dt><dd>{L('Go to projects', 'Aller aux projets')}</dd></div>
+      <div><dt><kbd>g</kbd> <kbd>b</kbd></dt><dd>{L('Go to background', 'Aller au parcours')}</dd></div>
+      <div><dt><kbd>g</kbd> <kbd>a</kbd></dt><dd>{L('Go to about', 'Aller à « À propos »')}</dd></div>
+      {notes && <div><dt><kbd>g</kbd> <kbd>n</kbd></dt><dd>{L('Go to notes', 'Aller aux notes')}</dd></div>}
+      <div><dt><kbd>g</kbd> <kbd>c</kbd></dt><dd>{L('Go to contact', 'Aller au contact')}</dd></div>
+      <div><dt><kbd>t</kbd></dt><dd>{L('Light / dark mode', 'Mode clair / sombre')}</dd></div>
+      <div><dt><kbd>[</kbd> <kbd>]</kbd></dt><dd>{L('Previous / next project', 'Projet précédent / suivant')}</dd></div>
+      <div><dt><kbd>?</kbd></dt><dd>{L('This sheet', 'Cette fiche')}</dd></div>
     </dl>
 
     <ol class="errata__list">
-      <li><span class="mono">Index</span> For “models taken apart”, read “models that took me apart, a little, each time”.</li>
-      <li><span class="mono">GANs</span> Some rejected digits were, on reflection, perfectly good digits.</li>
-      <li><span class="mono">Work</span> <span>The list shows every project but one. <a href="/plate-0/" class="errata__secret">See the missing one&nbsp;→</a></span></li>
+      <li><span class="mono">GANs</span> {L('Some rejected digits were, on reflection, perfectly good digits.', 'Certains chiffres rejetés étaient, à la réflexion, de très bons chiffres.')}</li>
+      <li><span class="mono">{L('Work', 'Projets')}</span> <span>{L('The list shows every project but one.', 'La liste montre tous les projets sauf un.')} <a href="/plate-0/" class="errata__secret">{L('See the missing one', 'Voir celui qui manque')}&nbsp;→</a></span></li>
     </ol>
 
     <label class="errata__switch mono">
       <input type="checkbox" data-keys-toggle checked />
-      <span>Single-key shortcuts on (turn off if you use speech input)</span>
+      <span>{L('Single-key shortcuts on (turn off if you use speech input)', 'Raccourcis à une touche activés (à désactiver si vous utilisez la saisie vocale)')}</span>
     </label>
 
     <form method="dialog" class="errata__foot">
-      <button class="label" type="submit" autofocus>Close <kbd>Esc</kbd></button>
+      <button class="label" type="submit" autofocus>{L('Close', 'Fermer')} <kbd>Esc</kbd></button>
     </form>
   </div>
 </dialog>

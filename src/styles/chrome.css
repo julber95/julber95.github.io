@@ -147,3 +147,15 @@ main { display: block; }
 .arrow-link span:last-child { transition: transform var(--dur-2) var(--ease); }
 .arrow-link:hover span:last-child { transform: translateX(4px); }
 .arrow-link:hover { color: var(--accent); }
+
+/* FR / EN switch: the current language in ink, the other one soft */
+.lang-switch { display: inline-flex; align-items: center; gap: .45em; padding: .4em .7em; border: var(--hair) solid var(--rule); border-radius: 999px; text-decoration: none; color: var(--ink-soft); transition: border-color var(--dur-1) var(--ease); }
+.lang-switch .on { color: var(--ink); font-weight: 500; }
+.lang-switch__sep { width: 1px; height: .9em; background: var(--rule); }
+.lang-switch:hover { border-color: var(--accent); }
+.lang-switch:hover span:not(.on):not(.lang-switch__sep) { color: var(--accent); }
+.theme-toggle, .masthead__home { white-space: nowrap; }
+@media (max-width: 420px) {
+  .masthead__tools { gap: var(--s-4); }
+  .theme-toggle span:last-child { display: none; }
+}

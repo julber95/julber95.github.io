@@ -73,7 +73,7 @@ const notes = defineCollection({
 });
 
 const pages = defineCollection({
-  loader: glob({ pattern: 'about.md', base: './src/content' }),
+  loader: glob({ pattern: ['about.md', 'fr/about.md'], base: './src/content' }),
   schema: z.object({ title: z.string(), lede: z.string() }),
 });
 

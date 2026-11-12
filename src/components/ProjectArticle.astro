@@ -3,6 +3,7 @@ import { render } from 'astro:content';
 import Engraving from './Engraving.astro';
 import Kicker from './Kicker.astro';
 import { hrefOf, slugOf, type Plate } from '../lib/plates';
+import { langOf, tr } from '../i18n/ui';
 
 interface Props { plate: Plate; prev?: Plate; next?: Plate }
 const { plate, prev, next } = Astro.props;
@@ -10,6 +11,8 @@ const d = plate.data;
 const slug = slugOf(plate);
 const { Content } = await render(plate);
 const hasNotes = d.results.some((r) => r.note);
+const lang = langOf(Astro.url);
+const L = <T,>(en: T, fr: T) => tr(lang, { en, fr });
 ---
 <article class="proj page page-top" aria-labelledby="proj-title">
   <header class="proj__head">
@@ -37,9 +40,9 @@ const hasNotes = d.results.some((r) => r.note);
 
   {d.results.length > 0 && (
     <section class="proj__results" aria-labelledby="results-h">
-      <h2 id="results-h" class="label">Measurements</h2>
+      <h2 id="results-h" class="label">{L('Measurements', 'Mesures')}</h2>
       <table>
-        <thead><tr><th scope="col">Setting</th><th scope="col">Value</th>{hasNotes && <th scope="col" class="proj__note">Note</th>}</tr></thead>
+        <thead><tr><th scope="col">{L('Setting', 'Configuration')}</th><th scope="col">{L('Value', 'Valeur')}</th>{hasNotes && <th scope="col" class="proj__note">{L('Note', 'Remarque')}</th>}</tr></thead>
         <tbody>
           {d.results.map((r) => (
             <tr class:list={{ best: r.best }}>
@@ -55,21 +58,21 @@ const hasNotes = d.results.some((r) => r.note);
   )}
 
   <section class="proj__stack" aria-labelledby="stack-h">
-    <h2 id="stack-h" class="label">Stack</h2>
+    <h2 id="stack-h" class="label">{L('Stack', 'Outils')}</h2>
     <p class="mono">{d.stack.join(' · ')}</p>
   </section>
 
   {(prev || next) && (
-    <nav class="proj-nav" aria-label="Adjacent projects">
+    <nav class="proj-nav" aria-label={L('Adjacent projects', 'Projets voisins')}>
       {prev ? (
         <a class="proj-nav__a" href={hrefOf(prev)} rel="prev" data-prev>
-          <span class="label">← Previous</span>
+          <span class="label">← {L('Previous', 'Précédent')}</span>
           <span class="proj-nav__t">{prev.data.label}</span>
         </a>
       ) : <span />}
       {next ? (
         <a class="proj-nav__a proj-nav__a--next" href={hrefOf(next)} rel="next" data-next>
-          <span class="label">Next →</span>
+          <span class="label">{L('Next', 'Suivant')} →</span>
           <span class="proj-nav__t">{next.data.label}</span>
         </a>
       ) : <span />}

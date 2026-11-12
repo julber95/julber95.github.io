@@ -20,6 +20,7 @@ import Colophon from '../components/Colophon.astro';
 import Errata from '../components/Errata.astro';
 import { site } from '../data/site';
 import { getNotes } from '../lib/notes';
+import { langOf, otherLang, t } from '../i18n/ui';
 const hasNotes = (await getNotes()).some((n) => !n.data.draft);
 
 interface Props {
@@ -31,13 +32,18 @@ interface Props {
   /** emit JSON-LD Person (index and about only) */
   person?: boolean;
 }
-const { title, description: rawDescription = site.description, ogImage = '/og/index.png', type = 'website', noindex = false, person = false } = Astro.props;
-const fullTitle = title ? `${title} — ${site.name}` : `${site.name} — ${site.title}`;
+const lang = langOf(Astro.url);
+const { title, description: rawDescription = t(lang, 'site.description'), ogImage = '/og/index.png', type = 'website', noindex = false, person = false } = Astro.props;
+const fullTitle = title ? `${title} — ${site.name}` : `${site.name} — ${t(lang, 'site.title')}`;
 // meta descriptions: keep to ~155 characters, cut at a word boundary
 const description = rawDescription.length <= 158 ? rawDescription : rawDescription.slice(0, 155).replace(/[\s,;:.—–-]+\S*$/, '') + '…';
 const path = Astro.url.pathname.endsWith('/') ? Astro.url.pathname : Astro.url.pathname + '/';
 const canonical = new URL(path, site.url).href;
 const ogUrl = new URL(ogImage, site.url).href;
+// the same page in the other language, when it has one
+const alt = otherLang(path);
+const twin = alt.href !== '/fr/' || path === '/' ? new URL(alt.href, site.url).href : null;
+const enUrl = lang === 'en' ? canonical : twin, frUrl = lang === 'fr' ? canonical : twin;
 
 const fontFaces = `
 @font-face{font-family:'Space Grotesk Variable';font-style:normal;font-display:swap;font-weight:300 700;src:url(${groteskNormal}) format('woff2-variations')}
@@ -66,7 +72,7 @@ const jsonLd = {
 };
 ---
 <!doctype html>
-<html lang="en">
+<html lang={lang}>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -74,6 +80,11 @@ const jsonLd = {
     <meta name="description" content={description} />
     {!noindex && <link rel="canonical" href={canonical} />}
     {noindex && <meta name="robots" content="noindex" />}
+    {!noindex && enUrl && frUrl && <>
+      <link rel="alternate" hreflang="en" href={enUrl} />
+      <link rel="alternate" hreflang="fr" href={frUrl} />
+      <link rel="alternate" hreflang="x-default" href={enUrl} />
+    </>}
     <meta name="author" content={site.name} />
     <meta name="color-scheme" content="light dark" />
     <meta name="theme-color" content="#F4F7FB" media="(prefers-color-scheme: light)" />
@@ -83,7 +94,8 @@ const jsonLd = {
     <link rel="sitemap" href="/sitemap-index.xml" />
 
     <meta property="og:type" content={type} />
-    <meta property="og:site_name" content={`${site.name} — ${site.title}`} />
+    <meta property="og:site_name" content={`${site.name} — ${t(lang, 'site.title')}`} />
+    <meta property="og:locale" content={lang === 'fr' ? 'fr_FR' : 'en_GB'} />
     <meta property="og:title" content={fullTitle} />
     <meta property="og:description" content={description} />
     <meta property="og:url" content={canonical} />
@@ -107,7 +119,7 @@ const jsonLd = {
     <slot name="head" />
   </head>
   <body>
-    <a class="skip" href="#main">Skip to contents</a>
+    <a class="skip" href="#main">{t(lang, 'skip')}</a>
     <TOC />
     <main id="main" tabindex="-1">
       <slot />

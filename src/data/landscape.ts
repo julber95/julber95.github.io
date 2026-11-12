@@ -6,6 +6,8 @@ export interface Basin {
   href: string;
   label: string;
   caption: string;
+  /** French label and caption */
+  fr: { label: string; caption: string };
   at: [number, number];
   depth: number;
   width: number;
@@ -14,11 +16,11 @@ export interface Basin {
 }
 
 export const basins: Basin[] = [
-  { key: 'work',  href: '/projects/',  label: 'Projects',      caption: '{n} projects, from GANs to medical imaging.', at: [0.31, 0.33], depth: 1.0,  width: 0.12, labelDy: -1.55 },
-  { key: 'background', href: '/background/', label: 'Background', caption: 'studies and work, from Dauphine to AMIAD.',   at: [0.74, 0.27], depth: 0.85, width: 0.10 },
-  { key: 'about', href: '/about/', label: 'About',     caption: 'why the part after training interests me.',   at: [0.29, 0.74], depth: 0.85, width: 0.10 },
-  { key: 'contact', href: '/contact/', label: 'Contact',   caption: 'email, LinkedIn, GitHub.',                   at: [0.72, 0.72], depth: 0.75, width: 0.09 },
-  { key: 'notes', href: '/notes/', label: 'Notes',     caption: 'longer write-ups.',                          at: [0.53, 0.52], depth: 0.6,  width: 0.065 },
+  { key: 'work',  href: '/projects/',  label: 'Projects',      caption: '{n} projects, from GANs to medical imaging.', at: [0.31, 0.33], depth: 1.0,  width: 0.12, labelDy: -1.55, fr: { label: 'Projets', caption: '{n} projets, des GANs à l’imagerie médicale.' } },
+  { key: 'background', href: '/background/', label: 'Background', caption: 'studies and work, from Dauphine to AMIAD.',   at: [0.74, 0.27], depth: 0.85, width: 0.10, fr: { label: 'Parcours', caption: 'études et travail, de Dauphine à l’AMIAD.' } },
+  { key: 'about', href: '/about/', label: 'About',     caption: 'why machine learning, and why explainability.',   at: [0.29, 0.74], depth: 0.85, width: 0.10, fr: { label: 'À propos', caption: 'pourquoi le machine learning et l’explicabilité.' } },
+  { key: 'contact', href: '/contact/', label: 'Contact',   caption: 'email, LinkedIn, GitHub.',                   at: [0.72, 0.72], depth: 0.75, width: 0.09, fr: { label: 'Contact', caption: 'e-mail, LinkedIn, GitHub.' } },
+  { key: 'notes', href: '/notes/', label: 'Notes',     caption: 'longer write-ups.',                          at: [0.53, 0.52], depth: 0.6,  width: 0.065, fr: { label: 'Notes', caption: 'des textes plus longs (en anglais).' } },
 ];
 
 /** Where the ball rests before anyone touches it: high ground, between basins. */

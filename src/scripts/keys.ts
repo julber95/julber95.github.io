@@ -35,7 +35,9 @@ addEventListener('keydown', (e) => {
   if (e.key === 'g') { pendingG = Date.now(); return; }
   if (pendingG && Date.now() - pendingG < 900 && routes[e.key]) {
     pendingG = 0;
-    location.href = routes[e.key]!;
+    // French pages stay in French (notes only exist in English)
+    const fr = document.documentElement.lang === 'fr' && e.key !== 'n';
+    location.href = (fr ? '/fr' : '') + routes[e.key]!;
   }
 });
 export {};

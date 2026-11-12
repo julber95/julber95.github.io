@@ -1,19 +1,24 @@
 ---
 import { nav as allNav } from '../data/site';
 import { hasPublishedNotes } from '../lib/notes';
+import { langOf, localize, otherLang, t, type Key } from '../i18n/ui';
+const lang = langOf(Astro.url);
+const alt = otherLang(Astro.url.pathname);
+const label = (l: string) => t(lang, `nav.${l}` as Key);
 // Notes stays out of the menu until a note is published
-const nav = (await hasPublishedNotes()) ? allNav : allNav.filter((n) => n.href !== '/notes/');
+const nav = ((await hasPublishedNotes()) ? allNav : allNav.filter((n) => n.href !== '/notes/')).map((n) => ({ ...n, href: localize(n.href, lang), label: label(n.label) }));
 const norm = (h: string) => h.replace(/\/$/, '') || '/';
 const path = norm(Astro.url.pathname);
-const isCurrent = (href: string) => { const h = norm(href); return h === '/' ? path === '/' : path === h || path.startsWith(h + '/'); };
+const home = localize('/', lang);
+const isCurrent = (href: string) => { const h = norm(href); return h === norm(home) ? path === h : path === h || path.startsWith(h + '/'); };
 ---
 <header class="masthead" data-masthead>
-  <a class="masthead__mark" href="/" aria-label="Home">
+  <a class="masthead__mark" href={home} aria-label={t(lang, 'home')}>
     <svg class="masthead__logo" viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 10.5 12 3.5l8.5 7" /><path d="M5.5 9v11h13V9" /><path d="M10 20v-5.5h4V20" /></svg>
-    <span class="masthead__home label">Home</span>
+    <span class="masthead__home label">{t(lang, 'home')}</span>
   </a>
 
-  <nav class="toc" aria-label="Contents">
+  <nav class="toc" aria-label={t(lang, 'contents')}>
     <ol role="list" class="toc__list">
       {nav.slice(1).map((item) => (
         <li>
@@ -26,20 +31,23 @@ const isCurrent = (href: string) => { const h = norm(href); return h === '/' ? p
   </nav>
 
   <div class="masthead__tools">
-    <button class="theme-toggle label" type="button" data-theme-toggle aria-pressed="false" aria-label="Dark mode">
+    <a class="lang-switch label" href={alt.href} hreflang={alt.lang} lang={alt.lang} aria-label={t(lang, 'lang.switch')} title={t(lang, 'lang.switch')} data-lang-switch>
+      <span class:list={{ on: lang === 'fr' }}>FR</span><span aria-hidden="true" class="lang-switch__sep"></span><span class:list={{ on: lang === 'en' }}>EN</span>
+    </a>
+    <button class="theme-toggle label" type="button" data-theme-toggle aria-pressed="false" aria-label={t(lang, 'dark')}>
       <span class="theme-toggle__dot" aria-hidden="true"></span>
-      <span>Dark mode</span>
+      <span>{t(lang, 'dark')}</span>
     </button>
-    <button class="toc-open label" type="button" aria-expanded="false" aria-controls="toc-overlay" data-toc-open>Contents</button>
+    <button class="toc-open label" type="button" aria-expanded="false" aria-controls="toc-overlay" data-toc-open>{t(lang, 'contents')}</button>
   </div>
 </header>
 
-<div class="toc-overlay" id="toc-overlay" data-toc-overlay role="dialog" aria-modal="true" aria-label="Table of contents" hidden>
+<div class="toc-overlay" id="toc-overlay" data-toc-overlay role="dialog" aria-modal="true" aria-label={t(lang, 'contents')} hidden>
   <div class="toc-overlay__head">
-    <span class="label">Contents</span>
-    <button class="label" type="button" data-toc-close>Close</button>
+    <span class="label">{t(lang, 'contents')}</span>
+    <button class="label" type="button" data-toc-close>{t(lang, 'close')}</button>
   </div>
-  <nav aria-label="Contents (full)">
+  <nav aria-label={t(lang, 'contents')}>
     <ol role="list" class="toc-overlay__list">
       {nav.map((item, i) => (
         <li style={`--i:${i}`}>
@@ -50,7 +58,7 @@ const isCurrent = (href: string) => { const h = norm(href); return h === '/' ? p
       ))}
     </ol>
   </nav>
-  <p class="toc-overlay__foot"><button class="label" type="button" data-errata-open data-toc-errata>Errata &amp; directions for use</button></p>
+  <p class="toc-overlay__foot"><button class="label" type="button" data-errata-open data-toc-errata>{t(lang, 'errata.open')}</button></p>
 </div>
 
 <script>
@@ -75,6 +83,10 @@ const isCurrent = (href: string) => { const h = norm(href); return h === '/' ? p
   window.addEventListener('atlas:toggle-theme', flip);
   matchMedia('(prefers-color-scheme: dark)').addEventListener('change', paint);
   paint();
+
+  // switching language keeps the query string (project filters)
+  const ls = document.querySelector<HTMLAnchorElement>('[data-lang-switch]');
+  if (ls && location.search) ls.href = ls.pathname + location.search;
 
   // masthead hairline once scrolled
   const mh = document.querySelector<HTMLElement>('[data-masthead]');

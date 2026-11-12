@@ -35,7 +35,7 @@ export function mountLandscape(root: HTMLElement) {
   const ballEl = root.querySelector<HTMLButtonElement>('[data-ball]')!;
   const hint = root.querySelector<HTMLElement>('[data-hint]');
   const labels = [...root.querySelectorAll<HTMLAnchorElement>('[data-basin]')];
-  const { basins, ball: ballStart } = JSON.parse(root.dataset.landscape!) as Data;
+  const { basins, ball: ballStart, settled = "Settled in <em>{x}</em>. Opening…" } = JSON.parse(root.dataset.landscape!) as Data & { settled?: string };
   const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   // ── the field (identical to the 2D figure) ─────
@@ -235,7 +235,7 @@ export function mountLandscape(root: HTMLElement) {
     mode = 'done';
     const i = nearestBasin(ball);
     setActive(i, true);
-    caption.innerHTML = `Settled in <em>${basins[i]!.label}</em>. Opening…`;
+    caption.innerHTML = settled.replace("{x}", basins[i]!.label);
     setTimeout(() => { location.href = basins[i]!.href; }, reduce ? 150 : 420);
   }
   function release() {
