@@ -107,7 +107,6 @@ function panel(x: number, y: number, kind: 'greedy' | 'beam' | 'topk' | 'nucleus
 }
 
 const panels = [panel(36, 46, 'greedy'), panel(312, 46, 'beam'), panel(36, 244, 'topk'), panel(312, 244, 'nucleus')];
-const roots = panels.map((p) => [p.x + 14, p.y + 92] as P);
 const join = (list: string[]) => list.join('');
 // a faint stipple ground under each panel, like the other plates
 const die = (c: P) => {
