@@ -1,7 +1,7 @@
 ---
 kind: experience
 title: 'AI Engineer Intern: text classification & XAI'
-org: INSEE, SSP Lab
+org: INSEE (National Institute of Statistics and Economic Studies), SSP Lab
 place: Montrouge
 coords: 48.82°N 2.32°E
 start: 2026-04-01

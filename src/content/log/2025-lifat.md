@@ -1,7 +1,7 @@
 ---
 kind: experience
 title: 'Research Intern: predictive approaches for financial time series'
-org: LIFAT, Université de Tours
+org: LIFAT (Laboratory of Fundamental and Applied Computer Science), Université de Tours
 place: Tours
 coords: 47.39°N 0.69°E
 start: 2025-06-01
