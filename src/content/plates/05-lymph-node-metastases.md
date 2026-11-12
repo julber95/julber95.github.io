@@ -22,6 +22,4 @@ results: []
 ---
 
 Whether a breast cancer has spread to the lymph nodes changes its staging and its treatment. I explored
-machine-learning and deep-learning models on the challenge's histology images; there is no public repository,
-so this page stays short for now.
-
+machine-learning and deep-learning models on the challenge’s histology images.

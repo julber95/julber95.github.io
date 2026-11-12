@@ -17,14 +17,7 @@ figCaption: Four ways to pick the next word. Greedy follows the most likely bran
 figAlt: Engraving in four panels, each a small tree growing left to right. Greedy follows one branch; beam search keeps three branches inside dashed capsules, traced in blue; top-k marks three candidates with a bracket and a die; nucleus marks a bracket whose size changes at each step.
 links:
   - { label: Repository, href: 'https://github.com/julber95/autoregressive-decoding-strategies' }
-resultsCaption: Scores on the prompt “Climate change remains one…”, against the reference sentence. Two prompts in total, so read these as an illustration, not a benchmark.
-results:
-  - { label: Greedy, value: 'BLEU 0.348 · ROUGE-L 0.546' }
-  - { label: Top-k (k = 10), value: 'BLEU 0.289 · ROUGE-L 0.539' }
-  - { label: Top-k (k = 5), value: 'BLEU 0.191 · ROUGE-L 0.364' }
-  - { label: Nucleus (p = 0.6), value: 'BLEU 0.348 · ROUGE-L 0.546' }
-  - { label: Beam (width 5), value: 'BLEU 0.349 · ROUGE-L 0.583' }
-  - { label: Beam (width 10), value: 'BLEU 0.405 · ROUGE-L 0.583', best: true }
+results: []
 ---
 
 ## Problem
